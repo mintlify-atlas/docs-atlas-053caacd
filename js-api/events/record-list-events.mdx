@@ -1,0 +1,311 @@
+---
+title: "Record list events"
+description: "Events triggered on the Kintone record list page for both desktop and mobile."
+---
+
+These events fire on the record list page. Use them to customize list behavior, validate inline edits, and react to record deletions.
+
+<Info>
+  Register all event handlers using `kintone.events.on()`. See [Event handling](/js-api/event-handling) for usage details.
+</Info>
+
+## Onload event
+
+Triggered after the record list page is displayed.
+
+<Tabs>
+  <Tab title="Desktop — app.record.index.show">
+    **Event type:** `app.record.index.show`
+
+    **Triggered timing:**
+
+    - After the record list page is displayed
+    - After paginating with the **Next** or **Previous** arrow icons
+    - After applying a filter on the record list
+    - After changing the category on the record list
+    - *(List view only)* After sorting by clicking a field title
+    - *(Calendar view only)* After changing the year or month
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.index.show`. |
+    | `appId` | Number | The app ID. |
+    | `viewId` | Number | The view ID of the record list. |
+    | `viewName` | String | The view name of the record list. |
+    | `viewType` | String | The view type. One of `list`, `calendar`, or `custom`. |
+    | `records` | Array or Object | Record data. For `list`: an array of record objects. For `calendar`: an object keyed by date string (e.g. `"2015-04-01"`) with arrays of record objects as values. For `custom` with pagination enabled: an array of record objects. For `custom` with pagination disabled: an empty array. |
+    | `date` | String | For `calendar` views: the displayed month (e.g. `"2015-04"`). For all other views: `null`. |
+    | `offset` | Number | For `list` views: the list offset. For `calendar`: `null`. For `custom` with pagination enabled: the list offset. For `custom` with pagination disabled: `0`. |
+    | `size` | Number | For `list` views: the record count. For `calendar`: `null`. For `custom` with pagination enabled: the record count. For `custom` with pagination disabled: `0`. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var records = event.records;
+      console.log('View type:', event.viewType);
+      console.log('Record count:', records.length);
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.index.show">
+    **Event type:** `mobile.app.record.index.show`
+
+    **Triggered timing:**
+
+    - After the record list page is displayed
+    - After paginating with the **Next** or **Previous** arrow icons
+    - After applying a filter on the record list
+    - After changing the category on the record list
+    - *(List view only)* After sorting by clicking a field title
+    - *(Calendar view only)* After changing the year or month
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.index.show`. |
+    | `appId` | Number | The app ID. |
+    | `viewId` | Number | The view ID of the record list. |
+    | `viewName` | String | The view name of the record list. |
+    | `viewType` | String | The view type. Available only for **List View** or **Custom View**. |
+    | `records` | Array | An array of record objects. Available only for **List View** or **Custom View**. |
+    | `offset` | Number | The list offset. Available only for **List View** or **Custom View**. |
+    | `size` | Number | The number of records in the list. Available only for **List View** or **Custom View**. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('mobile.app.record.index.show', function(event) {
+      var records = event.records;
+      console.log('Loaded', records.length, 'records on mobile.');
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Inline edit event
+
+**Event type:** `app.record.index.edit.show`
+
+<Warning>
+  This event is only available on desktop. There is no mobile equivalent.
+</Warning>
+
+Triggered when inline editing starts for a record on the record list page.
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.index.edit.show`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data at the time inline editing started. |
+
+**Available actions:**
+- Enable or disable field editing
+- Return a `Promise` to defer actions until asynchronous operations finish
+
+```js
+kintone.events.on('app.record.index.edit.show', function(event) {
+  // Disable a field when inline editing begins
+  event.record.Status.disabled = true;
+  return event;
+});
+```
+
+---
+
+## Save event
+
+**Event type:** `app.record.index.edit.submit`
+
+<Warning>
+  This event is only available on desktop. There is no mobile equivalent.
+</Warning>
+
+Triggered when the **Save** button of inline editing is clicked on the record list, before the data is saved to the server.
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.index.edit.submit`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data entered by the user. |
+
+**Canceling the save:**
+
+You can cancel the save by doing one of the following:
+- Set a field error on `event.record[fieldCode].error`
+- Set a record error on `event.error`
+- Return `false`
+
+**Available actions:**
+- Overwrite field values
+- Show field errors
+- Show record errors
+
+<Note>
+  Calculated field values depend on whether the field is displayed in the record list. If displayed: returns an empty string. If not displayed: returns the value before recalculation.
+</Note>
+
+```js
+kintone.events.on('app.record.index.edit.submit', function(event) {
+  var record = event.record;
+
+  // Validate a required field
+  if (!record.Title.value) {
+    record.Title.error = 'Title is required.';
+    return event;
+  }
+
+  return event;
+});
+```
+
+---
+
+## Save success event
+
+**Event type:** `app.record.index.edit.submit.success`
+
+<Warning>
+  This event is only available on desktop. It does not trigger if the record fails to save.
+</Warning>
+
+Triggered after a record is successfully saved via inline editing on the record list.
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.index.edit.submit.success`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data of the saved record. |
+
+**Available actions:** You can set `event.url` to redirect the user to a specific URL after saving.
+
+```js
+kintone.events.on('app.record.index.edit.submit.success', function(event) {
+  var record = event.record;
+  alert('Record saved. Updated at: ' + record.Updated_datetime.value);
+  return event;
+});
+```
+
+---
+
+## Field change event
+
+**Event type:** `app.record.index.edit.change.(fieldcode)`
+
+<Warning>
+  This event is only available on desktop. There is no mobile equivalent.
+</Warning>
+
+Triggered when the value of a specified field changes during inline editing on the record list. Replace `(fieldcode)` with the actual field code of the target field.
+
+**Supported field types:**
+
+- Single-line text *(triggers when the field loses focus or a lookup copies a value)*
+- Number *(triggers when the field loses focus or a lookup copies a value)*
+- Radio button
+- Check box
+- Multi-choice
+- Drop-down
+- Date
+- Time
+- Date and time
+- User selection
+- Department selection
+- Group selection
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.index.edit.change.(fieldcode)`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data at the time the field changed. |
+| `changes` | Object | Data about the changed field and row. |
+| `changes.field` | Object | The changed field object. |
+| `changes.row` | null | Always `null` — table fields cannot be modified on the record list. |
+
+**Available actions:**
+- Overwrite field values
+- Enable or disable field editing
+- Show field errors
+- Show record errors
+- Get the DOM element of the edited field
+
+<Note>
+  Calculated field values depend on whether the field is displayed in the record list. If displayed: returns an empty string. If not displayed: returns the value before recalculation.
+</Note>
+
+```js
+kintone.events.on('app.record.index.edit.change.Quantity', function(event) {
+  var record = event.record;
+  var qty = Number(record.Quantity.value);
+  var price = Number(record.UnitPrice.value);
+
+  // Auto-calculate total
+  record.Total.value = qty * price;
+  return event;
+});
+```
+
+---
+
+## Delete event
+
+**Event type:** `app.record.index.delete.submit`
+
+<Warning>
+  This event is only available on desktop. There is no mobile equivalent.
+</Warning>
+
+Triggered when the **Delete** button is clicked in the confirmation pop-up that appears after clicking the delete icon on the record list.
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.index.delete.submit`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data of the record to be deleted. |
+
+**Canceling the deletion:**
+
+You can cancel the deletion by doing one of the following:
+- Set a record error on `event.error`
+- Return `false`
+
+**Available actions:**
+- Show record errors
+- Return a `Promise` to delay the deletion until asynchronous operations finish
+
+```js
+kintone.events.on('app.record.index.delete.submit', function(event) {
+  var record = event.record;
+
+  // Prevent deletion of records marked as locked
+  if (record.Locked.value === 'Yes') {
+    event.error = 'This record is locked and cannot be deleted.';
+    return event;
+  }
+
+  return event;
+});
+```

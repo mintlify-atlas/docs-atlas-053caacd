@@ -1,0 +1,164 @@
+---
+title: "Field visibility"
+description: "Show, hide, and check the visibility of fields and field groups on record forms."
+---
+
+These APIs let you programmatically control the visibility of fields and field groups on record create, edit, and detail forms. Use them inside event handlers to build conditional UI logic.
+
+<Note>
+  Field visibility APIs only take effect on the record create, edit, and detail forms. They have no effect on record list views.
+</Note>
+
+## Show or hide fields
+
+<AccordionGroup>
+  <Accordion title="kintone.app.record.setFieldShown(fieldCode, visible)">
+    Shows or hides a field on a record form.
+
+    **Available pages:** Record create, record edit
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the target field |
+    | `visible` | boolean | Yes | `true` to show the field, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.create.show', (event) => {
+      // Hide the "Notes" field on load
+      kintone.app.record.setFieldShown('Notes', false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.mobile.app.record.setFieldShown(fieldCode, visible)">
+    Mobile variant of `setFieldShown`. Shows or hides a field on a mobile record form.
+
+    **Available pages:** Mobile record create, mobile record edit
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the target field |
+    | `visible` | boolean | Yes | `true` to show the field, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('mobile.app.record.create.show', (event) => {
+      kintone.mobile.app.record.setFieldShown('Notes', false);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Open or close field groups
+
+<AccordionGroup>
+  <Accordion title="kintone.app.record.setGroupFieldOpen(fieldCode, open)">
+    Opens or collapses a group field (accordion-style field group) on a record form.
+
+    **Available pages:** Record create, record edit, record detail
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the group field |
+    | `open` | boolean | Yes | `true` to expand the group, `false` to collapse it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      // Collapse the "Details" group field on load
+      kintone.app.record.setGroupFieldOpen('Details', false);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Check field visibility
+
+<AccordionGroup>
+  <Accordion title="kintone.app.record.isFieldVisible(fieldCode)">
+    Returns whether a field is currently visible on a record form.
+
+    **Available pages:** Record create, record edit, record detail
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the target field |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the field is visible, `false` if it is hidden |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.edit.show', (event) => {
+      const visible = kintone.app.record.isFieldVisible('Notes');
+      console.log('Notes field visible:', visible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.isGroupFieldOpen(fieldCode)">
+    Returns whether a group field is currently expanded.
+
+    **Available pages:** Record create, record edit, record detail
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the group field |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the group field is expanded, `false` if it is collapsed |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isOpen = kintone.app.record.isGroupFieldOpen('Details');
+      console.log('Details group open:', isOpen);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [UI elements](/js-api/ui-elements) — Show or hide buttons and other UI components
+- [Record create events](/js-api/events/record-create-events)
+- [Record edit events](/js-api/events/record-edit-events)

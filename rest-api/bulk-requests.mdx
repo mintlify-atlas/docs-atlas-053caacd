@@ -1,0 +1,162 @@
+---
+title: "Bulk requests"
+description: "Execute multiple Kintone REST API requests in a single call using bulk requests."
+---
+
+The Bulk Request API lets you combine up to 20 Kintone REST API requests into a single HTTP call. This is useful for atomically applying a set of changes — for example, adding a record and immediately updating its process status.
+
+## Endpoint summary
+
+| API | Method | URL |
+| :-- | :-- | :-- |
+| Bulk Request | POST | `/k/v1/bulkRequest.json` |
+
+---
+
+## Bulk request
+
+### POST /k/v1/bulkRequest.json
+
+Executes multiple API requests in sequence within a single HTTP call.
+
+**Request parameters**
+
+| Parameter | Type | Required | Description |
+| :-- | :-- | :-- | :-- |
+| `requests` | Array | Yes | An ordered array of request objects to execute. Maximum 20 requests. |
+
+Each object in `requests` must include:
+
+| Property | Type | Required | Description |
+| :-- | :-- | :-- | :-- |
+| `method` | String | Yes | The HTTP method: `GET`, `POST`, `PUT`, or `DELETE`. |
+| `api` | String | Yes | The API path, e.g. `/k/v1/record.json`. |
+| `payload` | Object | Yes | The request parameters for this API call (equivalent to the request body or query parameters of the individual API). |
+
+**Response parameters**
+
+| Parameter | Type | Description |
+| :-- | :-- | :-- |
+| `results` | Array | An array of response objects in the same order as the input `requests`. Each element is the response of the corresponding individual API call. |
+
+<Warning>
+  Bulk requests execute in order. If any request fails, all **subsequent** requests in the same bulk call are rolled back. Requests that already completed before the failure are **not** rolled back. Design your request order carefully — put dependent operations later in the array.
+</Warning>
+
+---
+
+## Example: add a record and update its status
+
+The following example adds a new record to an app and then immediately moves it through a process management action in a single bulk request.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST 'https://{subdomain}.kintone.com/k/v1/bulkRequest.json' \
+  -H 'X-Cybozu-API-Token: {APIToken}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "requests": [
+      {
+        "method": "POST",
+        "api": "/k/v1/record.json",
+        "payload": {
+          "app": 1,
+          "record": {
+            "title": { "value": "New order" },
+            "priority": { "value": "High" }
+          }
+        }
+      },
+      {
+        "method": "PUT",
+        "api": "/k/v1/record/status.json",
+        "payload": {
+          "app": 1,
+          "id": 200,
+          "action": "Submit"
+        }
+      }
+    ]
+  }'
+```
+
+```js kintone.api()
+var body = {
+  requests: [
+    {
+      method: 'POST',
+      api: '/k/v1/record.json',
+      payload: {
+        app: 1,
+        record: {
+          title: { value: 'New order' },
+          priority: { value: 'High' }
+        }
+      }
+    },
+    {
+      method: 'PUT',
+      api: '/k/v1/record/status.json',
+      payload: {
+        app: 1,
+        id: 200,
+        action: 'Submit'
+      }
+    }
+  ]
+};
+
+kintone.api(
+  kintone.api.url('/k/v1/bulkRequest.json', true),
+  'POST',
+  body,
+  function(resp) {
+    console.log(resp.results);
+    // resp.results[0] => Add Record response: { id, revision }
+    // resp.results[1] => Update Status response: { revision }
+  },
+  function(error) {
+    console.log(error);
+  }
+);
+```
+
+</CodeGroup>
+
+**Sample response**
+
+```json
+{
+  "results": [
+    {
+      "id": "201",
+      "revision": "1"
+    },
+    {
+      "revision": "2"
+    }
+  ]
+}
+```
+
+---
+
+## Constraints
+
+- A maximum of **20 requests** can be included in a single bulk request.
+- All requests in the array must target the same Kintone subdomain.
+- Not all APIs support being called inside a bulk request. Check the individual API documentation to confirm support.
+- If the total response size exceeds Kintone's limit, the request will fail.
+
+<Note>
+  Bulk requests are ideal for write operations (add, update, delete, status changes) that must succeed or fail as a group. For large read operations, use [cursor-based pagination](/rest-api/records) instead.
+</Note>
+
+---
+
+## Related pages
+
+- [Records](/rest-api/records) — Individual record CRUD and process management endpoints.
+- [Files](/rest-api/files) — Upload files before referencing them in bulk record operations.
+- [REST API overview](/rest-api/overview) — Full list of all endpoints.

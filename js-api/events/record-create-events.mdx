@@ -1,0 +1,286 @@
+---
+title: "Record create events"
+description: "Events triggered on the Kintone record create page."
+---
+
+These events fire on the record create page. Use them to set default field values, validate inputs before saving, and respond after a new record is successfully created.
+
+<Info>
+  Register all event handlers using `kintone.events.on()`. See [Event handling](/js-api/event-handling) for usage details.
+</Info>
+
+## Onload event
+
+Triggered after the record create page is displayed.
+
+<Tabs>
+  <Tab title="Desktop — app.record.create.show">
+    **Event type:** `app.record.create.show`
+
+    **Triggered timing:** After the record create page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.create.show`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data (field values) on the create page. |
+    | `reuse` | Boolean | `true` if the record was opened by clicking **Reuse** on a previously saved record; otherwise `false`. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page renders.
+
+    ```js
+    kintone.events.on('app.record.create.show', function(event) {
+      var record = event.record;
+
+      // Pre-fill a default value
+      record.AssignedTo.value = [{ code: kintone.getLoginUser().code }];
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.create.show">
+    **Event type:** `mobile.app.record.create.show`
+
+    **Triggered timing:** After the record create page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.create.show`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data on the create page. |
+    | `reuse` | Boolean | `true` if opened by the **Reuse** action; otherwise `false`. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page renders.
+
+    ```js
+    kintone.events.on('mobile.app.record.create.show', function(event) {
+      console.log('Create page opened on mobile.');
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Save event
+
+Triggered when the **Save** button is clicked on the record create page, before the data is sent to the server.
+
+<Tabs>
+  <Tab title="Desktop — app.record.create.submit">
+    **Event type:** `app.record.create.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.create.submit`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data entered by the user. |
+
+    **Canceling the save:**
+
+    You can cancel the save by doing one of the following:
+    - Set a field error on `event.record[fieldCode].error`
+    - Set a record error on `event.error`
+    - Return `false`
+
+    **Available actions:**
+    - Overwrite field values
+    - Show field errors
+    - Show record errors
+    - Return a `Promise` to delay saving until asynchronous operations finish
+
+    ```js
+    kintone.events.on('app.record.create.submit', function(event) {
+      var record = event.record;
+
+      if (!record.ProjectCode.value) {
+        record.ProjectCode.error = 'A project code is required.';
+        return event;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.create.submit">
+    **Event type:** `mobile.app.record.create.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.create.submit`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data entered by the user. |
+
+    **Canceling the save:**
+
+    You can cancel the save by doing one of the following:
+    - Set a field error on `event.record[fieldCode].error`
+    - Set a record error on `event.error`
+    - Return `false`
+
+    ```js
+    kintone.events.on('mobile.app.record.create.submit', function(event) {
+      var record = event.record;
+
+      if (!record.Title.value) {
+        record.Title.error = 'Title is required.';
+        return event;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Save success event
+
+Triggered after a new record is successfully saved from the record create page.
+
+<Warning>
+  This event does not trigger if the record fails to save.
+</Warning>
+
+<Tabs>
+  <Tab title="Desktop — app.record.create.submit.success">
+    **Event type:** `app.record.create.submit.success`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.create.submit.success`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID of the newly created record. |
+    | `record` | Object | The record data of the saved record. |
+
+    **Available actions:** Set `event.url` to redirect the user to a specific URL after saving.
+
+    ```js
+    kintone.events.on('app.record.create.submit.success', function(event) {
+      // Redirect to the record detail page after creation
+      event.url = '/k/' + event.appId + '/show#record=' + event.recordId;
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.create.submit.success">
+    **Event type:** `mobile.app.record.create.submit.success`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.create.submit.success`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID of the newly created record. |
+    | `record` | Object | The record data of the saved record. |
+
+    **Available actions:** Set `event.url` to redirect the user to a specific URL after saving.
+
+    ```js
+    kintone.events.on('mobile.app.record.create.submit.success', function(event) {
+      console.log('New record created with ID:', event.recordId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Field change event
+
+Triggered when the value of a specified field changes on the record create page. Replace `(fieldcode)` with the actual field code of the target field.
+
+**Supported field types:**
+
+- Single-line text *(triggers when the field loses focus or a lookup copies a value)*
+- Number *(triggers when the field loses focus or a lookup copies a value)*
+- Radio button
+- Check box
+- Multi-choice
+- Drop-down
+- Date
+- Time
+- Date and time
+- User selection
+- Department selection
+- Group selection
+- Rich text
+- Subtable (for changes within subtable rows)
+
+<Tabs>
+  <Tab title="Desktop — app.record.create.change.(fieldcode)">
+    **Event type:** `app.record.create.change.(fieldcode)`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.create.change.(fieldcode)`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data at the time the field changed. |
+    | `changes` | Object | Data about the changed field and row. |
+    | `changes.field` | Object | The changed field object. |
+    | `changes.row` | Object or null | The subtable row that contains the changed field, or `null` if outside a subtable. |
+
+    **Available actions:**
+    - Overwrite field values
+    - Enable or disable field editing
+    - Show field errors
+    - Show record errors
+    - Return a `Promise` to wait for asynchronous operations
+
+    ```js
+    kintone.events.on('app.record.create.change.Category', function(event) {
+      var record = event.record;
+
+      // Auto-set priority based on category
+      if (record.Category.value === 'Urgent') {
+        record.Priority.value = 'High';
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.create.change.(fieldcode)">
+    **Event type:** `mobile.app.record.create.change.(fieldcode)`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.create.change.(fieldcode)`. |
+    | `appId` | Number | The app ID. |
+    | `record` | Object | The record data at the time the field changed. |
+    | `changes` | Object | Data about the changed field and row. |
+    | `changes.field` | Object | The changed field object. |
+    | `changes.row` | Object or null | The subtable row containing the changed field, or `null`. |
+
+    **Available actions:**
+    - Overwrite field values
+    - Show field errors
+    - Return a `Promise` to wait for asynchronous operations
+
+    ```js
+    kintone.events.on('mobile.app.record.create.change.Department', function(event) {
+      var record = event.record;
+      console.log('Department changed to:', record.Department.value);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>

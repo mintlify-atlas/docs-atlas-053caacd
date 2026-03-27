@@ -1,0 +1,635 @@
+---
+title: "Spaces"
+description: "REST API endpoints for managing Kintone spaces, members, threads, and guests."
+---
+
+These endpoints let you create, read, update, and delete spaces, manage space members and threads, and work with guest users.
+
+## Endpoints
+
+<AccordionGroup>
+
+  <Accordion title="Get Space — GET /k/v1/space.json">
+
+    Retrieves information about a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The space ID. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The space ID. |
+    | `name` | String | The name of the space. |
+    | `isPrivate` | Boolean | Whether the space is private. |
+    | `creator` | Object | The user who created the space. |
+    | `modifier` | Object | The user who last modified the space. |
+    | `memberCount` | String | The number of members in the space. |
+    | `coverType` | String | The cover image type (`PRESET` or `FILE`). |
+    | `coverKey` | String | The key of the cover image. |
+    | `coverUrl` | String | The URL of the cover image. |
+    | `body` | String | The HTML body of the space. |
+    | `useMultiThread` | Boolean | Whether multi-thread is enabled. |
+    | `isGuest` | Boolean | Whether the space is a guest space. |
+    | `attachedApps` | Array | Apps attached to the space. |
+    | `threadIds` | Array | IDs of threads in the space. |
+    | `fixedMember` | Boolean | Whether the member list is fixed. |
+    | `showAnnouncement` | Boolean | Whether the announcement section is shown. |
+    | `showThreadList` | Boolean | Whether the thread list is shown. |
+    | `showAppList` | Boolean | Whether the app list is shown. |
+    | `showMemberList` | Boolean | Whether the member list is shown. |
+    | `showRelatedLinkList` | Boolean | Whether the related links list is shown. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/space.json?id=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js JavaScript
+    kintone.api(kintone.api.url('/k/v1/space.json', true), 'GET', { id: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Add Space From Template — POST /k/v1/template/space.json">
+
+    Creates a new space from an existing space template.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The ID of the space template to use. |
+    | `name` | String | Yes | The name of the new space. |
+    | `members` | Array | Yes | An array of member objects to add to the space. |
+    | `isPrivate` | Boolean | | Whether the space is private. |
+    | `isGuest` | Boolean | | Whether the space is a guest space. |
+    | `fixedMember` | Boolean | | Whether to fix the member list (prevent members from joining or leaving on their own). |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The ID of the newly created space. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/template/space.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": 1,
+        "name": "New Project Space",
+        "members": [
+          { "entity": { "type": "USER", "code": "user1" }, "isAdmin": true }
+        ],
+        "isPrivate": false
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      id: 1,
+      name: 'New Project Space',
+      members: [
+        { entity: { type: 'USER', code: 'user1' }, isAdmin: true }
+      ],
+      isPrivate: false
+    };
+    kintone.api(kintone.api.url('/k/v1/template/space.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Update Space Body — PUT /k/v1/space/body.json">
+
+    Updates the body (HTML content) of a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The space ID. |
+    | `body` | String | Yes | The HTML content to set as the space body. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/space/body.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": 1,
+        "body": "<b>Welcome to the project space!</b>"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      id: 1,
+      body: '<b>Welcome to the project space!</b>'
+    };
+    kintone.api(kintone.api.url('/k/v1/space/body.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Delete Space — DELETE /k/v1/space.json">
+
+    Deletes a space and all of its data, including threads, comments, and attached apps.
+
+    <Warning>
+      This action is permanent and cannot be undone. All threads, comments, and app associations within the space will be deleted.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The space ID. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/space.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{"id": 1}'
+    ```
+
+    ```js JavaScript
+    kintone.api(kintone.api.url('/k/v1/space.json', true), 'DELETE', { id: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Get Space Members — GET /k/v1/space/members.json">
+
+    Retrieves the list of members in a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The space ID. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `members` | Array | A list of member objects. |
+    | `members[].entity` | Object | The entity (user, group, or organization). |
+    | `members[].entity.type` | String | The entity type: `USER`, `GROUP`, or `ORGANIZATION`. |
+    | `members[].entity.code` | String | The code of the entity. |
+    | `members[].isAdmin` | Boolean | Whether the member is a space administrator. |
+    | `members[].includeSubs` | Boolean | Whether sub-organizations are included (for `ORGANIZATION` type). |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/space/members.json?id=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js JavaScript
+    kintone.api(kintone.api.url('/k/v1/space/members.json', true), 'GET', { id: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Update Space Members — PUT /k/v1/space/members.json">
+
+    Updates the member list of a space. This replaces the existing member list with the provided list.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The space ID. |
+    | `members` | Array | Yes | The new list of members. Each object must include an `entity` property. |
+    | `members[].entity` | Object | Yes | The entity to add. |
+    | `members[].entity.type` | String | Yes | The entity type: `USER`, `GROUP`, or `ORGANIZATION`. |
+    | `members[].entity.code` | String | Yes | The code of the entity. |
+    | `members[].isAdmin` | Boolean | | Whether to grant space administrator rights. |
+    | `members[].includeSubs` | Boolean | | Whether to include sub-organizations (`ORGANIZATION` type only). |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/space/members.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": 1,
+        "members": [
+          { "entity": { "type": "USER", "code": "user1" }, "isAdmin": true },
+          { "entity": { "type": "GROUP", "code": "group1" }, "isAdmin": false }
+        ]
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      id: 1,
+      members: [
+        { entity: { type: 'USER', code: 'user1' }, isAdmin: true },
+        { entity: { type: 'GROUP', code: 'group1' }, isAdmin: false }
+      ]
+    };
+    kintone.api(kintone.api.url('/k/v1/space/members.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Add Thread Comment — POST /k/v1/space/thread/comment.json">
+
+    Adds a comment to a thread in a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `space` | Integer | Yes | The space ID. |
+    | `thread` | Integer | Yes | The thread ID. |
+    | `comment` | Object | Yes | The comment to post. |
+    | `comment.text` | String | | The text body of the comment. |
+    | `comment.mentions` | Array | | Users to mention in the comment. |
+    | `comment.files` | Array | | Files to attach to the comment. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The comment ID of the newly created comment. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/space/thread/comment.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "space": 1,
+        "thread": 3,
+        "comment": {
+          "text": "This is a comment."
+        }
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      space: 1,
+      thread: 3,
+      comment: {
+        text: 'This is a comment.'
+      }
+    };
+    kintone.api(kintone.api.url('/k/v1/space/thread/comment.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Add Thread — POST /k/v1/space/thread.json">
+
+    Adds a new thread to a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `space` | Integer | Yes | The space ID. |
+    | `name` | String | Yes | The name of the thread. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The thread ID of the newly created thread. |
+    | `name` | String | The name of the thread. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/space/thread.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "space": 1,
+        "name": "Discussion Thread"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      space: 1,
+      name: 'Discussion Thread'
+    };
+    kintone.api(kintone.api.url('/k/v1/space/thread.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Update Thread — PUT /k/v1/space/thread.json">
+
+    Updates the name or body of a thread in a space.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The thread ID. |
+    | `name` | String | | The new name of the thread. |
+    | `body` | String | | The HTML content to set as the thread body. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/space/thread.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": 3,
+        "name": "Updated Thread Name",
+        "body": "<b>Thread body content</b>"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      id: 3,
+      name: 'Updated Thread Name',
+      body: '<b>Thread body content</b>'
+    };
+    kintone.api(kintone.api.url('/k/v1/space/thread.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Add Guests — POST /k/v1/guests.json">
+
+    Creates guest user accounts in Kintone. Guest users can only access the guest spaces they are invited to.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `guests` | Array | Yes | A list of guest user objects to create. |
+    | `guests[].name` | String | Yes | The display name of the guest user. |
+    | `guests[].code` | String | Yes | The email address used as the login name. |
+    | `guests[].password` | String | Yes | The login password for the guest user. |
+    | `guests[].timezone` | String | Yes | The timezone for the guest user (e.g., `Asia/Tokyo`). |
+    | `guests[].locale` | String | | The locale setting (e.g., `en`, `ja`). |
+    | `guests[].image` | String | | The file key of a profile image (from Upload File API). |
+    | `guests[].surNameReading` | String | | Phonetic reading of the surname. |
+    | `guests[].givenNameReading` | String | | Phonetic reading of the given name. |
+    | `guests[].company` | String | | The guest's company name. |
+    | `guests[].division` | String | | The guest's division or department. |
+    | `guests[].phone` | String | | The guest's phone number. |
+    | `guests[].callto` | String | | The guest's Skype name. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/guests.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "guests": [
+          {
+            "name": "Jane Smith",
+            "code": "jane@example.com",
+            "password": "password",
+            "timezone": "America/New_York",
+            "locale": "en"
+          }
+        ]
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      guests: [
+        {
+          name: 'Jane Smith',
+          code: 'jane@example.com',
+          password: 'password',
+          timezone: 'America/New_York',
+          locale: 'en'
+        }
+      ]
+    };
+    kintone.api(kintone.api.url('/k/v1/guests.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Update Guest Members — PUT /k/guest/{spaceId}/v1/space/guests.json">
+
+    Updates the guest members of a guest space. This replaces the current guest member list.
+
+    <Note>
+      This endpoint uses a different base path than other space endpoints. Replace `{spaceId}` in the URL with the ID of the guest space.
+    </Note>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `guests` | Array | Yes | A list of guest user login names (email addresses) to add to the space. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/guest/1/v1/space/guests.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "guests": ["jane@example.com", "john@example.com"]
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      guests: ['jane@example.com', 'john@example.com']
+    };
+    kintone.api(kintone.api.url('/k/guest/1/v1/space/guests.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+  <Accordion title="Delete Guests — DELETE /k/v1/guests.json">
+
+    Deletes guest user accounts from Kintone.
+
+    <Warning>
+      Deleting a guest user permanently removes their account and all access to guest spaces. This action cannot be undone.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `guests` | Array | Yes | A list of guest user login names (email addresses) to delete. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/guests.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "guests": ["jane@example.com"]
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      guests: ['jane@example.com']
+    };
+    kintone.api(kintone.api.url('/k/v1/guests.json', true), 'DELETE', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+  </Accordion>
+
+</AccordionGroup>
+
+## Related pages
+
+- [Authentication](/rest-api/authentication) — Set up request authentication.
+- [JS API Space APIs](/js-api/space-apis) — Manage spaces from within Kintone customizations.
+- [Files](/rest-api/files) — Upload files for use as space cover images or comment attachments.
+- [Plug-ins](/rest-api/plugins) — Install and manage Kintone plug-ins.

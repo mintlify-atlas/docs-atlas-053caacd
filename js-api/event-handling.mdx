@@ -1,0 +1,308 @@
+---
+title: "Event handling"
+description: "Register and manage event handlers in Kintone JavaScript customizations."
+---
+
+Kintone fires events at key points in the user's workflow — when a record list loads, when a field value changes, when a record is saved, and more. You register JavaScript functions to run at those moments using `kintone.events.on()`.
+
+## Registering event handlers
+
+### `kintone.events.on(type, handler)`
+
+Binds a handler function to one or more event types. Call this at the top level of your customization script so the handler is registered synchronously when the script loads.
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+| :-- | :-- | :-- | :-- |
+| `type` | String or Array of strings | Yes | The event type or an array of event types to listen for. |
+| `handler` | Function | Yes | The function to call when the event fires. Receives the event object as its only argument. |
+
+**Return value:** none
+
+#### Basic usage
+
+```js
+kintone.events.on('app.record.index.show', function(event) {
+  console.log(event);
+  // event.records contains the record data for the current list view
+});
+```
+
+#### Registering the same handler for multiple events
+
+Pass an array of event type strings to bind one handler to several events at once:
+
+```js
+kintone.events.on(
+  ['app.record.create.show', 'app.record.edit.show'],
+  function(event) {
+    console.log(event.type); // 'app.record.create.show' or 'app.record.edit.show'
+  }
+);
+```
+
+## Removing event handlers
+
+### `kintone.events.off(type, handler)`
+
+Unbinds a previously registered handler. Handlers are never overwritten — they accumulate. Use `kintone.events.off()` to remove a handler before registering a replacement.
+
+**Parameters**
+
+| Parameter | Type | Required | Description |
+| :-- | :-- | :-- | :-- |
+| `type` | String or Array of strings | No | The event type(s) to target. Omit to remove handlers for all event types. |
+| `handler` | Function | No | The specific handler to remove. Omit to remove all handlers for the given `type`. |
+
+**Return value:** `true` if at least one handler was removed; `false` if no matching handler was found.
+
+```js
+const handler = function(event) {
+  console.log(event);
+};
+
+kintone.events.on('app.record.index.show', handler);
+
+// Remove a specific handler from a specific event type
+kintone.events.off('app.record.index.show', handler);
+
+// Remove all handlers for a specific event type
+kintone.events.off('app.record.index.show');
+
+// Remove all handlers for all event types
+kintone.events.off();
+```
+
+## The event object
+
+Every handler receives an event object as its argument. The properties available depend on the event type, but the following are common across most events:
+
+| Property | Type | Description |
+| :-- | :-- | :-- |
+| `type` | String | The event type that fired, e.g. `'app.record.index.show'`. |
+| `appId` | Number | The ID of the current app. |
+| `record` | Object | The current record's field data (available on record create, edit, and detail events). |
+| `records` | Array or Object | The records in the current list view (available on record list events). |
+| `viewId` | Number | The ID of the current view (record list events). |
+| `viewName` | String | The name of the current view (record list events). |
+| `viewType` | String | The view type: `'list'`, `'calendar'`, or `'custom'`. |
+| `offset` | Number | The list offset for the current page (list and custom views). |
+| `size` | Number | The number of records on the current page. |
+| `error` | String | Set this property to display an error message at the top of the screen and cancel the current operation. |
+| `url` | String | Set this property on save-success events to redirect to a different URL after saving. |
+
+### Record list onload event object example
+
+The `app.record.index.show` event object includes these key properties:
+
+```js
+kintone.events.on('app.record.index.show', function(event) {
+  console.log(event.type);     // 'app.record.index.show'
+  console.log(event.appId);    // e.g. 1
+  console.log(event.viewId);   // e.g. 5
+  console.log(event.viewName); // e.g. '(Default)'
+  console.log(event.viewType); // 'list', 'calendar', or 'custom'
+  console.log(event.records);  // array of record objects
+  console.log(event.offset);   // e.g. 0
+  console.log(event.size);     // e.g. 20
+});
+```
+
+## Modifying behavior via the event object
+
+For many event types, you can change what Kintone does by modifying the event object and returning it from your handler.
+
+### Overwriting field values
+
+Modify a field's `value` property inside the event object and return the object. Kintone applies your changes to the form:
+
+```js
+kintone.events.on('app.record.create.show', function(event) {
+  var record = event.record;
+  record['Status'].value = 'In Progress';
+  return event; // Must return the event object
+});
+```
+
+### Disabling field editing
+
+Set a field's `disabled` property to `true` to make it read-only, or `false` to make it editable:
+
+```js
+kintone.events.on('app.record.edit.show', function(event) {
+  var record = event.record;
+  record['LockedField'].disabled = true;
+  return event;
+});
+```
+
+### Showing field errors
+
+Set a field's `error` property to display a validation message below that field. Set it to `null` to clear the message:
+
+```js
+kintone.events.on('app.record.create.submit', function(event) {
+  var record = event.record;
+  if (!record['RequiredField'].value) {
+    record['RequiredField'].error = 'This field is required.';
+  }
+  return event;
+});
+```
+
+### Showing a record-level error
+
+Set `event.error` to display an error message at the top of the screen and cancel the current operation (e.g. prevent a save):
+
+```js
+kintone.events.on('app.record.create.submit', function(event) {
+  if (someConditionFails) {
+    event.error = 'Cannot save: a required condition was not met.';
+  }
+  return event;
+});
+```
+
+### Redirecting after save
+
+Set `event.url` on a save-success event to navigate to a different page after the record is saved:
+
+```js
+kintone.events.on('app.record.create.submit.success', function(event) {
+  event.url = '/k/' + kintone.app.getId() + '/';
+  return event;
+});
+```
+
+<Note>
+  When multiple handlers are registered for the same event type, Kintone uses the event object returned by the **last** handler. If the last handler does not return the event object, field value changes from earlier handlers are not applied.
+</Note>
+
+## Synchronous vs. asynchronous handlers
+
+### Synchronous handlers
+
+A synchronous handler runs, optionally modifies the event object, and returns it. This is the simplest pattern:
+
+```js
+kintone.events.on('app.record.edit.show', function(event) {
+  event.record['Notes'].value = 'Default note text';
+  return event;
+});
+```
+
+### Asynchronous handlers (Promise)
+
+For events that support Promises, you can return a `Promise` from your handler. Kintone waits for the Promise to resolve before proceeding. This lets you make API calls or run other async operations before the page renders or a record is saved:
+
+```js
+kintone.events.on('app.record.create.show', function(event) {
+  return kintone.api(kintone.api.url('/k/v1/records', true), 'GET', {
+    app: kintone.app.getId()
+  }).then(function(response) {
+    // Use data from the API response to pre-populate a field
+    event.record['RecordCount'].value = String(response.totalCount);
+    return event; // Resolve the Promise with the modified event object
+  });
+});
+```
+
+<Info>
+  Not all events support Promises. Check the individual event reference page to confirm. If an error occurs and a Thenable is rejected, subsequent handlers for the same event type will not run.
+</Info>
+
+## Best practices
+
+### Always use an IIFE
+
+Wrap your customization in an immediately-invoked function expression. This keeps your variables out of the global scope and ensures handlers are registered at script-load time:
+
+<Tabs>
+  <Tab title="Recommended">
+    ```js
+    (function() {
+      'use strict';
+
+      kintone.events.on('app.record.create.show', function(event) {
+        window.alert('Record create page loaded.');
+      });
+
+    })();
+    ```
+  </Tab>
+  <Tab title="With jQuery">
+    ```js
+    (function($) {
+      'use strict';
+
+      // Register handlers immediately — not inside $(function() {...})
+      kintone.events.on('app.record.create.show', function(event) {
+        window.alert('Record create page loaded.');
+      });
+
+      $(function() {
+        // Code that requires DOMContentLoaded can go here
+      });
+
+    })(jQuery);
+    ```
+  </Tab>
+</Tabs>
+
+### Do not register inside DOMContentLoaded or load
+
+Kintone initializes pages before the browser fires `DOMContentLoaded` and `load`. If you register handlers inside those callbacks, Kintone may already have fired the onload event and your handler will never run.
+
+<Warning>
+  The following patterns will cause your handlers to be registered **too late** for onload events (`app.record.create.show`, `app.record.edit.show`, `app.record.detail.show`):
+
+  ```js
+  // BAD: DOMContentLoaded fires after Kintone's onload event
+  document.addEventListener('DOMContentLoaded', function() {
+    kintone.events.on('app.record.create.show', function(event) {
+      // This may never run
+    });
+  });
+
+  // BAD: $(function(){...}) is equivalent to DOMContentLoaded
+  $(function() {
+    kintone.events.on('app.record.create.show', function(event) {
+      // This may never run
+    });
+  });
+
+  // BAD: Inside an async callback
+  kintone.api('/k/v1/records', 'GET', { app: appId }, function() {
+    kintone.events.on('app.record.create.show', function(event) {
+      // This will never run reliably
+    });
+  });
+  ```
+</Warning>
+
+### Script load order
+
+When both app JavaScript files and plug-in JavaScript files are applied to an app, Kintone loads them in this order:
+
+1. App JavaScript files
+2. Plug-in JavaScript files
+
+Handlers added later do not overwrite earlier handlers — they accumulate. To replace a handler, use `kintone.events.off()` to remove the existing handler first, then register the new one.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Record list events" icon="list" href="/js-api/events/record-list-events">
+    Onload, inline edit, field change, save, and delete events for the record list page.
+  </Card>
+  <Card title="Record create events" icon="plus" href="/js-api/events/record-create-events">
+    Onload, field change, save, and save-success events for the record create form.
+  </Card>
+  <Card title="Record edit events" icon="pen" href="/js-api/events/record-edit-events">
+    Onload, field change, save, and save-success events for the record edit form.
+  </Card>
+  <Card title="Record detail events" icon="file-text" href="/js-api/events/record-detail-events">
+    Onload, delete, and process management events for the record detail page.
+  </Card>
+</CardGroup>

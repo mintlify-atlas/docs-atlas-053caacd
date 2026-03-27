@@ -1,0 +1,985 @@
+---
+title: "Records"
+description: "REST API endpoints for creating, reading, updating, and deleting records in Kintone apps."
+---
+
+Use the Records API to manage individual records and bulk record operations in a Kintone app. All endpoints require authentication — see [Authentication](/rest-api/authentication).
+
+## Endpoint summary
+
+| API | Method | URL |
+| :-- | :-- | :-- |
+| Get Record | GET | `/k/v1/record.json` |
+| Get Records | GET | `/k/v1/records.json` |
+| Add Record | POST | `/k/v1/record.json` |
+| Add Records | POST | `/k/v1/records.json` |
+| Update Record | PUT | `/k/v1/record.json` |
+| Update Records | PUT | `/k/v1/records.json` |
+| Delete Records | DELETE | `/k/v1/records.json` |
+| Add Cursor | POST | `/k/v1/records/cursor.json` |
+| Get Records via Cursor | GET | `/k/v1/records/cursor.json` |
+| Delete Cursor | DELETE | `/k/v1/records/cursor.json` |
+| Get Comments | GET | `/k/v1/record/comments.json` |
+| Add Comment | POST | `/k/v1/record/comment.json` |
+| Delete Comment | DELETE | `/k/v1/record/comment.json` |
+| Update Status | PUT | `/k/v1/record/status.json` |
+| Update Multiple Statuses | PUT | `/k/v1/records/status.json` |
+| Update Assignees | PUT | `/k/v1/record/assignees.json` |
+| Evaluate Record Permissions | GET | `/k/v1/records/acl/evaluate.json` |
+
+---
+
+## Single record
+
+<AccordionGroup>
+  <Accordion title="GET /k/v1/record.json — Get Record">
+    Retrieves a single record from an app.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `id` | Integer | Yes | The record ID. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `record` | Object | An object containing field codes as keys and field value objects as values. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/record.json?app=1&id=100' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record.json', true), 'GET', {
+      app: 1,
+      id: 100
+    }, function(resp) {
+      console.log(resp.record);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "record": {
+        "$id": { "type": "__ID__", "value": "100" },
+        "$revision": { "type": "__REVISION__", "value": "1" },
+        "title": { "type": "SINGLE_LINE_TEXT", "value": "Sample record" }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Multiple records
+
+<AccordionGroup>
+  <Accordion title="GET /k/v1/records.json — Get Records">
+    Retrieves multiple records from an app using a query string.
+
+    <Note>
+      A maximum of 500 records can be retrieved per request. To retrieve more than 500 records, use [cursor-based pagination](#cursor-based-pagination).
+    </Note>
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `query` | String | No | A query string to filter and sort records. |
+    | `fields[]` | Array | No | An array of field codes to include in the response. Returns all fields if omitted. |
+    | `totalCount` | Boolean | No | If `true`, the total count of records matching the query is returned. Defaults to `false`. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `records` | Array | An array of record objects. |
+    | `totalCount` | String or null | The total number of records matching the query. `null` if `totalCount` was not set to `true` in the request. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/records.json?app=1&query=status%3D%22Open%22%20order%20by%20%24id%20asc%20limit%20100&fields[]=title&fields[]=status&totalCount=true' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
+      app: 1,
+      query: 'status = "Open" order by $id asc limit 100',
+      fields: ['title', 'status'],
+      totalCount: true
+    }, function(resp) {
+      console.log(resp.records);
+      console.log(resp.totalCount);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "records": [
+        {
+          "$id": { "type": "__ID__", "value": "1" },
+          "title": { "type": "SINGLE_LINE_TEXT", "value": "First record" },
+          "status": { "type": "STATUS", "value": "Open" }
+        }
+      ],
+      "totalCount": "42"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Add records
+
+<AccordionGroup>
+  <Accordion title="POST /k/v1/record.json — Add Record">
+    Adds a single record to an app.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `record` | Object | No | An object of field codes and their values to set on the new record. Omit fields you want to use their default values. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The record ID of the newly created record. |
+    | `revision` | String | The revision number of the record after creation. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/record.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "record": {
+          "title": { "value": "New record" },
+          "status": { "value": "Open" }
+        }
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record.json', true), 'POST', {
+      app: 1,
+      record: {
+        title: { value: 'New record' },
+        status: { value: 'Open' }
+      }
+    }, function(resp) {
+      console.log(resp.id);
+      console.log(resp.revision);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "id": "101",
+      "revision": "1"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="POST /k/v1/records.json — Add Records">
+    Adds up to 100 records to an app in a single request.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `records` | Array | Yes | An array of record objects. Each object uses field codes as keys. Up to 100 records per request. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `ids` | Array | An array of record IDs for the newly created records, in the same order as the request. |
+    | `revisions` | Array | An array of revision numbers for each created record, in the same order as the request. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/records.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "records": [
+          { "title": { "value": "Record A" } },
+          { "title": { "value": "Record B" } }
+        ]
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records.json', true), 'POST', {
+      app: 1,
+      records: [
+        { title: { value: 'Record A' } },
+        { title: { value: 'Record B' } }
+      ]
+    }, function(resp) {
+      console.log(resp.ids);
+      console.log(resp.revisions);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "ids": ["102", "103"],
+      "revisions": ["1", "1"]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Update records
+
+<AccordionGroup>
+  <Accordion title="PUT /k/v1/record.json — Update Record">
+    Updates a single record in an app. You can identify the record by its record ID or by a unique key field (`updateKey`).
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `id` | Integer | Conditional | The record ID. Required if `updateKey` is not specified. |
+    | `updateKey` | Object | Conditional | An object with `field` (field code) and `value` to identify the record by a unique field. Required if `id` is not specified. |
+    | `record` | Object | No | An object of field codes and their updated values. Only the fields you include are updated. |
+    | `revision` | Integer | No | The expected revision number. The update fails if the current revision differs. Omit to skip the revision check. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/record.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "id": 100,
+        "revision": 2,
+        "record": {
+          "status": { "value": "Closed" }
+        }
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record.json', true), 'PUT', {
+      app: 1,
+      id: 100,
+      revision: 2,
+      record: {
+        status: { value: 'Closed' }
+      }
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="PUT /k/v1/records.json — Update Records">
+    Updates up to 100 records in an app. Each record in the request can be identified by record ID or by a unique key field.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `records` | Array | Yes | An array of record update objects. Each object must include either `id` or `updateKey`, a `record` object of fields to update, and optionally a `revision`. Up to 100 records per request. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/records.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "records": [
+          {
+            "id": 100,
+            "revision": 2,
+            "record": { "status": { "value": "Closed" } }
+          },
+          {
+            "updateKey": { "field": "orderCode", "value": "ORD-001" },
+            "record": { "status": { "value": "Shipped" } }
+          }
+        ]
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records.json', true), 'PUT', {
+      app: 1,
+      records: [
+        {
+          id: 100,
+          revision: 2,
+          record: { status: { value: 'Closed' } }
+        },
+        {
+          updateKey: { field: 'orderCode', value: 'ORD-001' },
+          record: { status: { value: 'Shipped' } }
+        }
+      ]
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "records": [
+        { "id": "100", "revision": "3" },
+        { "id": "55", "revision": "2" }
+      ]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Delete records
+
+<AccordionGroup>
+  <Accordion title="DELETE /k/v1/records.json — Delete Records">
+    Deletes up to 100 records from an app.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `ids` | Array | Yes | An array of record IDs to delete. Up to 100 IDs per request. |
+    | `revisions` | Array | No | An array of expected revision numbers corresponding to each record ID. The delete fails for any record whose current revision differs. Omit to skip revision checks. |
+
+    <Warning>
+      Deleted records cannot be recovered. Verify the record IDs before calling this endpoint.
+    </Warning>
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/records.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "ids": [100, 101],
+        "revisions": [3, 1]
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records.json', true), 'DELETE', {
+      app: 1,
+      ids: [100, 101],
+      revisions: [3, 1]
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {}
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Cursor-based pagination
+
+When you need to retrieve more than 500 records, use cursors. A cursor stores your query server-side and lets you page through all results.
+
+<Note>
+  Cursors expire after 10 minutes of inactivity. Delete a cursor when you are done to free server resources.
+</Note>
+
+**Typical flow:**
+
+<Steps>
+  <Step title="Create a cursor">
+    Call `POST /k/v1/records/cursor.json` with your query. Save the returned `id` and `totalCount`.
+  </Step>
+  <Step title="Fetch pages">
+    Repeatedly call `GET /k/v1/records/cursor.json` with the cursor `id` until `next` is `false`.
+  </Step>
+  <Step title="Delete the cursor (optional)">
+    If you stop early, call `DELETE /k/v1/records/cursor.json` to clean up.
+  </Step>
+</Steps>
+
+<AccordionGroup>
+  <Accordion title="POST /k/v1/records/cursor.json — Add Cursor">
+    Creates a cursor for paginating through a large record set.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `fields[]` | Array | No | An array of field codes to return. Returns all fields if omitted. |
+    | `query` | String | No | A query string to filter and sort records. |
+    | `size` | Integer | No | Number of records per page. Maximum 500. Defaults to 100. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The cursor ID. Use this when calling `GET /k/v1/records/cursor.json`. |
+    | `totalCount` | String | The total number of records matching the query. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/records/cursor.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "query": "status = \"Open\" order by $id asc",
+        "fields": ["title", "status"],
+        "size": 500
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records/cursor.json', true), 'POST', {
+      app: 1,
+      query: 'status = "Open" order by $id asc',
+      fields: ['title', 'status'],
+      size: 500
+    }, function(resp) {
+      console.log(resp.id);
+      console.log(resp.totalCount);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "id": "a8a2d83e-1234-5678-abcd-ef0123456789",
+      "totalCount": "1500"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="GET /k/v1/records/cursor.json — Get Records via Cursor">
+    Fetches the next page of records for a cursor. Call repeatedly until `next` is `false`.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | String | Yes | The cursor ID returned by Add Cursor. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `records` | Array | An array of record objects for this page. |
+    | `next` | Boolean | `true` if more pages remain. `false` when this is the last page. The cursor is automatically deleted after the last page is retrieved. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/records/cursor.json?id=a8a2d83e-1234-5678-abcd-ef0123456789' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js kintone.api()
+    // Fetch all records using a cursor
+    async function getAllRecords(app, query) {
+      // Create cursor
+      const cursor = await kintone.api(
+        kintone.api.url('/k/v1/records/cursor.json', true),
+        'POST',
+        { app, query, size: 500 }
+      );
+
+      let allRecords = [];
+      let next = true;
+
+      while (next) {
+        const page = await kintone.api(
+          kintone.api.url('/k/v1/records/cursor.json', true),
+          'GET',
+          { id: cursor.id }
+        );
+        allRecords = allRecords.concat(page.records);
+        next = page.next;
+      }
+
+      return allRecords;
+    }
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "records": [
+        {
+          "$id": { "type": "__ID__", "value": "1" },
+          "title": { "type": "SINGLE_LINE_TEXT", "value": "Record one" }
+        }
+      ],
+      "next": true
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="DELETE /k/v1/records/cursor.json — Delete Cursor">
+    Deletes a cursor before all records have been retrieved. Use this when you stop paginating early.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | String | Yes | The cursor ID to delete. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/records/cursor.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{ "id": "a8a2d83e-1234-5678-abcd-ef0123456789" }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records/cursor.json', true), 'DELETE', {
+      id: 'a8a2d83e-1234-5678-abcd-ef0123456789'
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {}
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comments
+
+<AccordionGroup>
+  <Accordion title="GET /k/v1/record/comments.json — Get Comments">
+    Retrieves comments for a record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `record` | Integer | Yes | The record ID. |
+    | `order` | String | No | Sort order for comments: `asc` or `desc`. Defaults to `desc`. |
+    | `offset` | Integer | No | Number of comments to skip. |
+    | `limit` | Integer | No | Number of comments to return. Maximum 10. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `comments` | Array | An array of comment objects. Each includes `id`, `text`, `createdAt`, and `creator`. |
+    | `older` | Boolean | `true` if there are older comments beyond the current result set. |
+    | `newer` | Boolean | `true` if there are newer comments beyond the current result set. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/record/comments.json?app=1&record=100&order=asc&limit=10' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record/comments.json', true), 'GET', {
+      app: 1,
+      record: 100,
+      order: 'asc',
+      limit: 10
+    }, function(resp) {
+      console.log(resp.comments);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="POST /k/v1/record/comment.json — Add Comment">
+    Adds a comment to a record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `record` | Integer | Yes | The record ID. |
+    | `comment` | Object | Yes | An object with `text` (the comment body) and optionally `mentions` (an array of user/group/department mention objects). |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The ID of the newly created comment. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/record/comment.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "record": 100,
+        "comment": {
+          "text": "Please review this record.",
+          "mentions": [
+            { "code": "alice", "type": "USER" }
+          ]
+        }
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record/comment.json', true), 'POST', {
+      app: 1,
+      record: 100,
+      comment: {
+        text: 'Please review this record.',
+        mentions: [{ code: 'alice', type: 'USER' }]
+      }
+    }, function(resp) {
+      console.log(resp.id);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="DELETE /k/v1/record/comment.json — Delete Comment">
+    Deletes a comment from a record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `record` | Integer | Yes | The record ID. |
+    | `comment` | Integer | Yes | The comment ID to delete. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/record/comment.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{"app": 1, "record": 100, "comment": 5}'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record/comment.json', true), 'DELETE', {
+      app: 1,
+      record: 100,
+      comment: 5
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Process management
+
+<AccordionGroup>
+  <Accordion title="PUT /k/v1/record/status.json — Update Status">
+    Updates the process management status of a single record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `id` | Integer | Yes | The record ID. |
+    | `action` | String | Yes | The name of the action to perform (must match an action defined in the app's process management settings). |
+    | `assignee` | String | No | The login name of the user to assign. Required if the next status requires an assignee. |
+    | `revision` | Integer | No | The expected revision number. The update fails if the current revision differs. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/record/status.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "id": 100,
+        "action": "Approve",
+        "assignee": "bob"
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record/status.json', true), 'PUT', {
+      app: 1,
+      id: 100,
+      action: 'Approve',
+      assignee: 'bob'
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="PUT /k/v1/records/status.json — Update Multiple Statuses">
+    Updates the process management status of up to 100 records in a single request.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `records` | Array | Yes | An array of status update objects. Each object must include `id`, `action`, and optionally `assignee` and `revision`. Up to 100 records per request. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/records/status.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "records": [
+          { "id": 100, "action": "Approve", "assignee": "bob" },
+          { "id": 101, "action": "Reject" }
+        ]
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records/status.json', true), 'PUT', {
+      app: 1,
+      records: [
+        { id: 100, action: 'Approve', assignee: 'bob' },
+        { id: 101, action: 'Reject' }
+      ]
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="PUT /k/v1/record/assignees.json — Update Assignees">
+    Updates the assignees of a record in an app with process management enabled.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `id` | Integer | Yes | The record ID. |
+    | `assignees` | Array | Yes | An array of login names to assign. Pass an empty array to remove all assignees. |
+    | `revision` | Integer | No | The expected revision number. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/record/assignees.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "id": 100,
+        "assignees": ["alice", "bob"],
+        "revision": 3
+      }'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/record/assignees.json', true), 'PUT', {
+      app: 1,
+      id: 100,
+      assignees: ['alice', 'bob'],
+      revision: 3
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Record permissions
+
+<AccordionGroup>
+  <Accordion title="GET /k/v1/records/acl/evaluate.json — Evaluate Record Permissions">
+    Returns the permissions the requesting user has for each specified record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `ids` | Array | Yes | An array of record IDs to evaluate. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `evaluate` | Array | An array of permission objects, one per record ID. Each includes `id` and boolean fields `viewable`, `editable`, and `deletable`. |
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/records/acl/evaluate.json?app=1&ids[0]=100&ids[1]=101' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -H 'Content-Type: application/json'
+    ```
+
+    ```js kintone.api()
+    kintone.api(kintone.api.url('/k/v1/records/acl/evaluate.json', true), 'GET', {
+      app: 1,
+      ids: [100, 101]
+    }, function(resp) {
+      console.log(resp.evaluate);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "evaluate": [
+        { "id": "100", "viewable": true, "editable": true, "deletable": false },
+        { "id": "101", "viewable": true, "editable": false, "deletable": false }
+      ]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Related pages
+
+- [Files](/rest-api/files) — Upload and download file attachments.
+- [Bulk requests](/rest-api/bulk-requests) — Execute multiple API calls in a single request.
+- [REST API overview](/rest-api/overview) — Full list of all endpoints.

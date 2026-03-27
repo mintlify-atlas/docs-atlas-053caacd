@@ -1,0 +1,423 @@
+---
+title: "Form fields"
+description: "REST API endpoints for managing form fields and layouts in Kintone apps."
+---
+
+Use these endpoints to read and modify the fields and layout of an app's form. All requests require [authentication](/rest-api/authentication).
+
+<Note>
+**Preview vs. live endpoints**
+
+Endpoints under `/k/v1/preview/...` operate on the app's **draft** settings — changes are not visible to end users until you call [Deploy App Settings](/rest-api/apps#deploy-app-settings). Endpoints under `/k/v1/app/...` (without `preview`) return the currently **live** settings.
+
+After making changes via a preview endpoint, remember to [deploy the app](/rest-api/apps#deploy-app-settings).
+</Note>
+
+## Form fields
+
+<AccordionGroup>
+  <Accordion title="Get Form Fields — GET /k/v1/app/form/fields.json">
+    Returns field definitions for the live version of an app's form. To retrieve draft (pre-deployment) fields, use `/k/v1/preview/app/form/fields.json` instead.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for field labels: `en`, `zh`, `ja`, `user`, or `default`. Defaults to `default`. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `properties` | Object | A map of field codes to field definition objects. |
+    | `revision` | String | The current revision number of the app settings. |
+
+    Each field definition object contains at minimum:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `type` | String | The field type (e.g., `SINGLE_LINE_TEXT`, `NUMBER`, `DATE`). |
+    | `code` | String | The unique field code. |
+    | `label` | String | The field label displayed in the form. |
+    | `noLabel` | Boolean | Whether the field label is hidden. |
+    | `required` | Boolean | Whether the field is required. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl (live)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/form/fields.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```bash curl (preview)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/preview/app/form/fields.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "properties": {
+        "Text_field": {
+          "type": "SINGLE_LINE_TEXT",
+          "code": "Text_field",
+          "label": "Text",
+          "noLabel": false,
+          "required": true,
+          "unique": false,
+          "maxLength": "64",
+          "minLength": "0",
+          "defaultValue": ""
+        }
+      },
+      "revision": "2"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Add Form Fields — POST /k/v1/preview/app/form/fields.json">
+    Adds one or more fields to the draft version of the app form. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `properties` | Object | Yes | A map of field codes to field definition objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number after the change. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/preview/app/form/fields.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "properties": {
+          "Customer_name": {
+            "type": "SINGLE_LINE_TEXT",
+            "code": "Customer_name",
+            "label": "Customer name",
+            "required": true
+          }
+        }
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      properties: {
+        Customer_name: {
+          type: 'SINGLE_LINE_TEXT',
+          code: 'Customer_name',
+          label: 'Customer name',
+          required: true
+        }
+      }
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/form/fields.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update Form Fields — PUT /k/v1/preview/app/form/fields.json">
+    Updates properties of existing fields in the draft version of the app form. You cannot change a field's `type` or `code`. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `properties` | Object | Yes | A map of field codes to updated field definition properties. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number after the change. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/form/fields.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "properties": {
+          "Customer_name": {
+            "label": "Full name",
+            "required": false
+          }
+        }
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      properties: {
+        Customer_name: {
+          label: 'Full name',
+          required: false
+        }
+      }
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/form/fields.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "4"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Delete Form Fields — DELETE /k/v1/preview/app/form/fields.json">
+    Deletes one or more fields from the draft version of the app form. Deploy the app to make changes live.
+
+    <Warning>
+    Deleting a field also deletes all data stored in that field for every record. This cannot be undone after deployment.
+    </Warning>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `fields` | Array of strings | Yes | The field codes to delete. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number after the change. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/preview/app/form/fields.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "fields": ["Customer_name"]
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      fields: ['Customer_name']
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/form/fields.json', true), 'DELETE', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "5"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Form layout
+
+<AccordionGroup>
+  <Accordion title="Get Form Layout — GET /k/v1/app/form/layout.json">
+    Returns the layout information (row and field arrangement) for the live version of the app form. To retrieve the draft layout, use `/k/v1/preview/app/form/layout.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `layout` | Array | List of layout row objects. |
+    | `layout[].type` | String | Row type: `ROW`, `SUBTABLE`, or `GROUP`. |
+    | `layout[].fields` | Array | Fields in the row, each with `type`, `code`, `size` (width/height). |
+    | `revision` | String | The current revision number of the app settings. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl (live)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/form/layout.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```bash curl (preview)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/preview/app/form/layout.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "layout": [
+        {
+          "type": "ROW",
+          "fields": [
+            {
+              "type": "SINGLE_LINE_TEXT",
+              "code": "Customer_name",
+              "size": { "width": "200" }
+            }
+          ]
+        }
+      ],
+      "revision": "2"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update Form Layout — PUT /k/v1/preview/app/form/layout.json">
+    Updates the layout of the app form in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `layout` | Array | Yes | The new layout. Each element represents a row with a `type` and a `fields` array. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number after the change. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/form/layout.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "layout": [
+          {
+            "type": "ROW",
+            "fields": [
+              {
+                "type": "SINGLE_LINE_TEXT",
+                "code": "Customer_name",
+                "size": { "width": "200" }
+              }
+            ]
+          }
+        ]
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      layout: [
+        {
+          type: 'ROW',
+          fields: [
+            {
+              type: 'SINGLE_LINE_TEXT',
+              code: 'Customer_name',
+              size: { width: '200' }
+            }
+          ]
+        }
+      ]
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/form/layout.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Deprecated
+
+<AccordionGroup>
+  <Accordion title="Get Form — GET /k/v1/form.json">
+    <Warning>
+    This endpoint is deprecated. Use [Get Form Fields](#get-form-fields-get-kv1appformfieldsjson) and [Get Form Layout](#get-form-layout-get-kv1appformlayoutjson) instead.
+    </Warning>
+
+    Returns both field definitions and layout information combined. A preview version is available at `/k/v1/preview/form.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [Apps](/rest-api/apps) — Create apps and deploy changes
+- [Views and settings](/rest-api/views-and-settings) — Manage views, permissions, and notifications

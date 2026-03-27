@@ -1,25 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "Kintone Developer Documentation",
+  "projectType": "api-service",
+  "projectName": "Kintone Developer Documentation",
+  "projectDescription": "Developer reference for the Kintone platform, covering the JavaScript API for UI customization and the REST API for app, record, file, and space management.",
   "theme": "luma",
-  "colors": {
-    "primary": "#54545c"
-  },
-  "logo": {
-    "light": "https://media.brand.dev/99d23bb0-7527-48e5-b2c1-71011df3a4d8.svg",
-    "dark": "https://media.brand.dev/99d23bb0-7527-48e5-b2c1-71011df3a4d8.svg"
-  },
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/akika/docs"
-    }
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/akika/docs"
-    }
-  },
+  "primaryColor": "#54545c",
+  "lightColor": null,
+  "darkColor": null,
   "navigation": {
     "tabs": [
       {
@@ -111,5 +97,33 @@
         ]
       }
     ]
-  }
+  },
+  "keyFeatures": [
+    "JavaScript API for customizing Kintone app UI and responding to user events",
+    "REST API for programmatic management of apps, records, files, and spaces",
+    "Event system covering record list, detail, create, edit, print, graph, portal, and space pages",
+    "Plug-in support for both JS API configuration and REST API management",
+    "Desktop and mobile support for all major APIs",
+    "Proxy support for external API requests from within Kintone customizations"
+  ],
+  "publicApiSurface": [
+    "kintone.events.on()",
+    "kintone.events.off()",
+    "kintone.api()",
+    "kintone.app.record.get()",
+    "kintone.app.record.set()",
+    "kintone.app.getId()",
+    "kintone.getLoginUser()",
+    "kintone.proxy()",
+    "kintone.plugin.app.getConfig()",
+    "GET /k/v1/record.json",
+    "POST /k/v1/record.json",
+    "PUT /k/v1/record.json",
+    "DELETE /k/v1/records.json",
+    "GET /k/v1/app.json",
+    "POST /k/v1/preview/app.json",
+    "GET /k/v1/plugins.json",
+    "POST /k/v1/plugin.json",
+    "GET /k/v1/space.json"
+  ]
 }

@@ -1,0 +1,200 @@
+---
+title: "REST API overview"
+description: "Overview of the Kintone REST API for managing apps, records, files, spaces, and plug-ins."
+---
+
+The Kintone REST API lets you interact with Kintone programmatically from any HTTP client. You can create and update records, manage app settings, upload files, administer spaces, and install plug-ins.
+
+All requests and responses use JSON. Authentication is required for every request. See [Authentication](/rest-api/authentication) for details.
+
+## Base URL
+
+All REST API endpoints are served from your Kintone subdomain:
+
+```
+https://{subdomain}.kintone.com
+```
+
+Replace `{subdomain}` with your Kintone subdomain (for example, `https://example.kintone.com`).
+
+<Note>
+For guest space APIs, the URL path uses a different prefix: `/k/guest/{spaceId}/v1/...`. See [Authentication](/rest-api/authentication) for more details.
+</Note>
+
+## Request format
+
+- Send `Content-Type: application/json` for all requests with a request body.
+- Pass request parameters as a JSON body for `POST`, `PUT`, and `DELETE` requests.
+- Pass request parameters as query string values for `GET` requests.
+- All endpoints end in `.json` (for example, `/k/v1/record.json`).
+
+## Response format
+
+Successful responses return HTTP `200` with a JSON body containing the requested data.
+
+### Error responses
+
+Failed requests return a non-`200` HTTP status code and a JSON body with three fields:
+
+```json
+{
+  "code": "CB_VA01",
+  "id": "some-unique-request-id",
+  "message": "The value of the 'app' is not a number."
+}
+```
+
+| Field | Type | Description |
+| :-- | :-- | :-- |
+| `code` | String | A machine-readable error code identifying the error type. |
+| `id` | String | A unique ID for the request, useful when reporting issues to Kintone support. |
+| `message` | String | A human-readable description of the error. |
+
+## Limits
+
+Kintone enforces concurrency and rate limits on API requests. If you exceed the concurrency limit, subsequent requests will be queued or rejected. Design your integration to handle rate-limit errors gracefully by retrying with exponential backoff.
+
+When using the JavaScript API inside a Kintone customization, you can check the current concurrency limit with [`kintone.api.getConcurrencyLimit()`](/js-api/general-utilities).
+
+## Preview vs. live settings
+
+Some App settings APIs operate on either the **live** app or **preview** (unpublished) settings:
+
+- **Live** endpoints use the path `/k/v1/...`
+- **Preview** endpoints use the path `/k/v1/preview/...`
+
+Changes made via preview endpoints are not applied to the live app until you call the [Deploy App Settings](/rest-api/apps) API.
+
+## Endpoint categories
+
+<CardGroup cols={2}>
+  <Card title="Apps" icon="grid-2" href="/rest-api/apps">
+    Create apps, manage form fields, views, permissions, notifications, and other app settings.
+  </Card>
+  <Card title="Form fields" icon="input-text" href="/rest-api/form-fields">
+    Add, update, and delete form fields and form layout on an app.
+  </Card>
+  <Card title="Views and settings" icon="sliders" href="/rest-api/views-and-settings">
+    Manage views, general settings, process management, customization, graph settings, and action settings.
+  </Card>
+  <Card title="Records" icon="database" href="/rest-api/records">
+    Create, read, update, and delete records. Use cursor-based pagination for large datasets and bulk requests for batching multiple operations.
+  </Card>
+  <Card title="Files" icon="file" href="/rest-api/files">
+    Upload files and retrieve uploaded file content by file key.
+  </Card>
+  <Card title="Bulk requests" icon="layer-group" href="/rest-api/bulk-requests">
+    Combine multiple record create, update, and delete operations into a single atomic request.
+  </Card>
+  <Card title="Spaces" icon="users" href="/rest-api/spaces">
+    Create and manage spaces, space members, threads, and guest users.
+  </Card>
+  <Card title="Plug-ins" icon="plug" href="/rest-api/plugins">
+    Install, update, and uninstall plug-ins in your Kintone environment.
+  </Card>
+</CardGroup>
+
+## All endpoints
+
+### Apps
+
+| Category | API | Method | Path |
+| :-- | :-- | :-- | :-- |
+| **Apps** | Get App | GET | `/k/v1/app.json` |
+| | Get Apps | GET | `/k/v1/apps.json` |
+| | Add Preview App | POST | `/k/v1/preview/app.json` |
+| **Deploy** | Deploy App Settings | POST | `/k/v1/preview/app/deploy.json` |
+| | Get App Deploy Status | GET | `/k/v1/preview/app/deploy.json` |
+| **Form Fields** | Get Form Fields | GET | `/k/v1/app/form/fields.json` |
+| | Add Form Fields | POST | `/k/v1/preview/app/form/fields.json` |
+| | Update Form Fields | PUT | `/k/v1/preview/app/form/fields.json` |
+| | Delete Form Fields | DELETE | `/k/v1/preview/app/form/fields.json` |
+| **Form Layout** | Get Form Layout | GET | `/k/v1/app/form/layout.json` |
+| | Update Form Layout | PUT | `/k/v1/preview/app/form/layout.json` |
+| **Views** | Get Views | GET | `/k/v1/app/views.json` |
+| | Update Views | PUT | `/k/v1/preview/app/views.json` |
+| **General Settings** | Get General Settings | GET | `/k/v1/app/settings.json` |
+| | Update General Settings | PUT | `/k/v1/preview/app/settings.json` |
+| **Process Management** | Get Process Management Settings | GET | `/k/v1/app/status.json` |
+| | Update Process Management Settings | PUT | `/k/v1/preview/app/status.json` |
+| **Customization** | Get Customization | GET | `/k/v1/app/customize.json` |
+| | Update Customization | PUT | `/k/v1/preview/app/customize.json` |
+| **App Permissions** | Get App Permissions | GET | `/k/v1/app/acl.json` |
+| | Update App Permissions | PUT | `/k/v1/app/acl.json` |
+| **Record Permissions** | Get Record Permissions | GET | `/k/v1/record/acl.json` |
+| | Update Record Permissions | PUT | `/k/v1/record/acl.json` |
+| **Field Permissions** | Get Field Permissions | GET | `/k/v1/field/acl.json` |
+| | Update Field Permissions | PUT | `/k/v1/field/acl.json` |
+| **Notifications** | Get General Notification Settings | GET | `/k/v1/app/notifications/general.json` |
+| | Update General Notification Settings | PUT | `/k/v1/preview/app/notifications/general.json` |
+| | Get Per Record Notification Settings | GET | `/k/v1/app/notifications/perRecord.json` |
+| | Update Per Record Notification Settings | PUT | `/k/v1/preview/app/notifications/perRecord.json` |
+| | Get Reminder Notification Settings | GET | `/k/v1/app/notifications/reminder.json` |
+| | Update Reminder Notification Settings | PUT | `/k/v1/preview/app/notifications/reminder.json` |
+| **Graph Settings** | Get Graph Settings | GET | `/k/v1/app/reports.json` |
+| | Update Graph Settings | PUT | `/k/v1/preview/app/reports.json` |
+| **Action Settings** | Get Action Settings | GET | `/k/v1/app/actions.json` |
+| | Update Action Settings | PUT | `/k/v1/preview/app/actions.json` |
+| **Plug-ins** | Get App Plug-ins | GET | `/k/v1/app/plugins.json` |
+| | Add Plug-ins to App | POST | `/k/v1/app/plugins.json` |
+| **Admin Notes** | Get App Admin Notes | GET | `/k/v1/app/adminNotes.json` |
+| | Update App Admin Notes | PUT | `/k/v1/app/adminNotes.json` |
+| **Move App** | Move App to Space | POST | `/k/v1/app/move.json` |
+
+### Records
+
+| Category | API | Method | Path |
+| :-- | :-- | :-- | :-- |
+| **Record** | Get Record | GET | `/k/v1/record.json` |
+| | Get Records | GET | `/k/v1/records.json` |
+| | Add Record | POST | `/k/v1/record.json` |
+| | Add Records | POST | `/k/v1/records.json` |
+| | Update Record | PUT | `/k/v1/record.json` |
+| | Update Records | PUT | `/k/v1/records.json` |
+| | Delete Records | DELETE | `/k/v1/records.json` |
+| **Cursor** | Add Cursor | POST | `/k/v1/records/cursor.json` |
+| | Get Cursor | GET | `/k/v1/records/cursor.json` |
+| | Delete Cursor | DELETE | `/k/v1/records/cursor.json` |
+| **Comments** | Get Comments | GET | `/k/v1/record/comments.json` |
+| | Add Comment | POST | `/k/v1/record/comment.json` |
+| | Delete Comment | DELETE | `/k/v1/record/comment.json` |
+| **Bulk Request** | Bulk Request | POST | `/k/v1/bulkRequest.json` |
+| **Process Management** | Update Status | PUT | `/k/v1/record/status.json` |
+| | Update Multiple Statuses | PUT | `/k/v1/records/status.json` |
+| | Update Assignees | PUT | `/k/v1/record/assignees.json` |
+| **Record Permissions** | Evaluate Record Permissions | GET | `/k/v1/records/acl/evaluate.json` |
+
+### Files
+
+| Category | API | Method | Path |
+| :-- | :-- | :-- | :-- |
+| **File** | Download File | GET | `/k/v1/file.json` |
+| | Upload File | POST | `/k/v1/file.json` |
+
+### Spaces
+
+| Category | API | Method | Path |
+| :-- | :-- | :-- | :-- |
+| **Space** | Get Space | GET | `/k/v1/space.json` |
+| | Add Space From Template | POST | `/k/v1/template/space.json` |
+| | Update Space Body | PUT | `/k/v1/space/body.json` |
+| | Delete Space | DELETE | `/k/v1/space.json` |
+| **Space Members** | Get Space Members | GET | `/k/v1/space/members.json` |
+| | Update Space Members | PUT | `/k/v1/space/members.json` |
+| **Thread** | Add Thread | POST | `/k/v1/space/thread.json` |
+| | Update Thread | PUT | `/k/v1/space/thread.json` |
+| | Add Thread Comment | POST | `/k/v1/space/thread/comment.json` |
+| **Guests** | Add Guests | POST | `/k/v1/guests.json` |
+| | Update Guest Members | PUT | `/k/guest/{spaceId}/v1/space/guests.json` |
+| | Delete Guests | DELETE | `/k/v1/guests.json` |
+
+### Plug-ins
+
+| Category | API | Method | Path |
+| :-- | :-- | :-- | :-- |
+| **Plug-ins** | Get Installed Plug-ins | GET | `/k/v1/plugins.json` |
+| | Install Plug-in | POST | `/k/v1/plugin.json` |
+| | Update Plug-in | PUT | `/k/v1/plugin.json` |
+| | Uninstall Plug-in | DELETE | `/k/v1/plugin.json` |
+| | Get Plug-in Apps | GET | `/k/v1/plugin/apps.json` |
+| | Get Required Plug-ins | GET | `/k/v1/plugins/required.json` |

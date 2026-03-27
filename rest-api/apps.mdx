@@ -1,0 +1,308 @@
+---
+title: "Apps"
+description: "REST API endpoints for creating, deploying, and managing Kintone apps."
+---
+
+Use these endpoints to create apps, deploy configuration changes, and check deployment status. All requests require [authentication](/rest-api/authentication).
+
+<Note>
+Changes made through preview endpoints (`/k/v1/preview/...`) are saved as a draft and do **not** affect the live app until you call [Deploy App Settings](#deploy-app-settings). After deploying, use [Get App Deploy Status](#get-app-deploy-status) to confirm the deployment completed.
+</Note>
+
+## App management
+
+<AccordionGroup>
+  <Accordion title="Get App — GET /k/v1/app.json">
+    Returns the details of a single app.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | Integer | Yes | The app ID. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `appId` | String | The app ID. |
+    | `code` | String | The app code. |
+    | `name` | String | The app name. |
+    | `description` | String | The app description. |
+    | `spaceId` | String | The ID of the space the app belongs to, or `null`. |
+    | `threadId` | String | The ID of the thread the app belongs to, or `null`. |
+    | `createdAt` | String | ISO 8601 timestamp of when the app was created. |
+    | `creator` | Object | The creator's `code` and `name`. |
+    | `modifiedAt` | String | ISO 8601 timestamp of the last modification. |
+    | `modifier` | Object | The last modifier's `code` and `name`. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app.json?id=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app.json', true), 'GET', { id: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "appId": "1",
+      "code": "APP_CODE",
+      "name": "My App",
+      "description": "An example Kintone app.",
+      "spaceId": null,
+      "threadId": null,
+      "createdAt": "2022-01-01T00:00:00.000Z",
+      "creator": { "code": "user1", "name": "User One" },
+      "modifiedAt": "2022-06-01T00:00:00.000Z",
+      "modifier": { "code": "user1", "name": "User One" }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Get Apps — GET /k/v1/apps.json">
+    Returns a list of apps. Supports filtering by IDs, codes, name, or space. Returns up to 100 apps per request.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `ids[]` | Array of integers | No | Filter by app IDs. Up to 100 values. |
+    | `codes[]` | Array of strings | No | Filter by app codes. Up to 100 values. |
+    | `name` | String | No | Filter by app name (partial match). |
+    | `spaceIds[]` | Array of integers | No | Filter by space IDs. Up to 100 values. |
+    | `offset` | Integer | No | Number of apps to skip. Default: `0`. |
+    | `limit` | Integer | No | Number of apps to return. Max: `100`. Default: `100`. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `apps` | Array | List of app objects. Each object contains the same properties as [Get App](#get-app-get-kv1appjson). |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/apps.json?ids[]=1&ids[]=2&limit=10' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/apps.json', true), 'GET', {
+      ids: [1, 2],
+      limit: 10
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "apps": [
+        {
+          "appId": "1",
+          "code": "APP_CODE",
+          "name": "My App",
+          "description": "An example Kintone app.",
+          "spaceId": null,
+          "threadId": null,
+          "createdAt": "2022-01-01T00:00:00.000Z",
+          "creator": { "code": "user1", "name": "User One" },
+          "modifiedAt": "2022-06-01T00:00:00.000Z",
+          "modifier": { "code": "user1", "name": "User One" }
+        }
+      ]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Creating and deploying apps
+
+<AccordionGroup>
+  <Accordion title="Add Preview App — POST /k/v1/preview/app.json">
+    Creates a new app in preview (draft) state. The app is not live until you call [Deploy App Settings](#deploy-app-settings).
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `name` | String | Yes | The app name. Maximum 64 characters. |
+    | `space` | Integer | No | The ID of the space to place the app in. |
+    | `thread` | Integer | No | The ID of the thread in the space. Required if `space` is specified. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `app` | String | The ID of the newly created app. |
+    | `revision` | String | The revision number of the app settings. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/preview/app.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "name": "My New App",
+        "space": 5,
+        "thread": 10
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      name: 'My New App',
+      space: 5,
+      thread: 10
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "app": "23",
+      "revision": "1"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Deploy App Settings — POST /k/v1/preview/app/deploy.json">
+    Deploys the draft settings of one or more apps, making them live. You can deploy up to 300 apps per request.
+
+    <Warning>
+    Deployment is asynchronous. After calling this endpoint, use [Get App Deploy Status](#get-app-deploy-status-get-kv1previewappdeployjson) to confirm the deployment has completed before proceeding.
+    </Warning>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `apps` | Array of objects | Yes | List of apps to deploy. Each object contains `app` (app ID) and optionally `revision`. |
+    | `apps[].app` | Integer | Yes | The app ID. |
+    | `apps[].revision` | Integer | No | The expected revision number. Deployment fails if the current revision does not match. Use `-1` to skip the check. |
+    | `revert` | Boolean | No | If `true`, reverts all draft settings back to the live settings without deploying. Default: `false`. |
+
+    ### Response
+
+    An empty object `{}` is returned on success.
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/preview/app/deploy.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "apps": [
+          { "app": 23, "revision": 3 }
+        ]
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      apps: [
+        { app: 23, revision: 3 }
+      ]
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/deploy.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {}
+    ```
+  </Accordion>
+
+  <Accordion title="Get App Deploy Status — GET /k/v1/preview/app/deploy.json">
+    Returns the deployment status for one or more apps. Use this after calling [Deploy App Settings](#deploy-app-settings-post-kv1previewappdeployjson) to confirm deployment completed.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `apps[]` | Array of integers | Yes | The app IDs to check. Up to 300 values. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `apps` | Array | List of status objects. |
+    | `apps[].app` | String | The app ID. |
+    | `apps[].status` | String | Deployment status: `PROCESSING`, `SUCCESS`, `FAIL`, or `CANCEL`. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/preview/app/deploy.json?apps[]=23' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/preview/app/deploy.json', true), 'GET', {
+      apps: [23]
+    }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "apps": [
+        {
+          "app": "23",
+          "status": "SUCCESS"
+        }
+      ]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [Form fields](/rest-api/form-fields) — Add and manage form fields
+- [Views and settings](/rest-api/views-and-settings) — Manage views, permissions, notifications, and more
+- [REST API overview](/rest-api/overview) — Full endpoint reference table

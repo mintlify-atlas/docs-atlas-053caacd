@@ -1,0 +1,1292 @@
+---
+title: "Views and settings"
+description: "REST API endpoints for managing views, settings, permissions, and notifications in Kintone apps."
+---
+
+Use these endpoints to configure app views, general settings, process management, customization, permissions, notifications, graphs, actions, plug-ins, and admin notes. All requests require [authentication](/rest-api/authentication).
+
+<Note>
+**Preview vs. live endpoints**
+
+Endpoints under `/k/v1/preview/...` write to the app's **draft** settings and do not affect live users until you call [Deploy App Settings](/rest-api/apps#deploy-app-settings). Endpoints without `preview` in the path operate on the **live** settings directly.
+</Note>
+
+## Views
+
+<AccordionGroup>
+  <Accordion title="Get Views — GET /k/v1/app/views.json">
+    Returns the view configurations for the live app. To retrieve draft views, use `/k/v1/preview/app/views.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for view names: `en`, `zh`, `ja`, `user`, or `default`. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `views` | Object | A map of view names to view definition objects. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/views.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/views.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "views": {
+        "My List View": {
+          "type": "LIST",
+          "name": "My List View",
+          "id": "20",
+          "filterCond": "",
+          "sort": "Record_number desc",
+          "index": "0",
+          "fields": ["Record_number", "Text_field"]
+        }
+      },
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update Views — PUT /k/v1/preview/app/views.json">
+    Updates the view configurations in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `views` | Object | Yes | A map of view names to view definition objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `views` | Object | A map of view names to objects containing each view's assigned `id`. |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/views.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "views": {
+          "My List View": {
+            "type": "LIST",
+            "name": "My List View",
+            "filterCond": "updated_time > LAST_WEEK()",
+            "sort": "Record_number desc",
+            "index": "0",
+            "fields": ["Record_number", "Text_field"]
+          }
+        }
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      views: {
+        'My List View': {
+          type: 'LIST',
+          name: 'My List View',
+          filterCond: 'updated_time > LAST_WEEK()',
+          sort: 'Record_number desc',
+          index: '0',
+          fields: ['Record_number', 'Text_field']
+        }
+      }
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/views.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "views": {
+        "My List View": { "id": "20" }
+      },
+      "revision": "4"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## General settings
+
+<AccordionGroup>
+  <Accordion title="Get General Settings — GET /k/v1/app/settings.json">
+    Returns the general settings (name, description, icon, theme) for the live app. To retrieve draft settings, use `/k/v1/preview/app/settings.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for the app name and description. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `name` | String | The app name. |
+    | `description` | String | The app description (HTML). |
+    | `icon` | Object | The app icon. Contains `type` (`FILE` or `PRESET`) and either `file` or `key`. |
+    | `theme` | String | The color theme. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/settings.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/settings.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "name": "My App",
+      "description": "<b>An example app</b>",
+      "icon": {
+        "type": "PRESET",
+        "key": "APP60"
+      },
+      "theme": "WHITE",
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update General Settings — PUT /k/v1/preview/app/settings.json">
+    Updates the general settings of the app in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `name` | String | No | The app name. Maximum 64 characters. |
+    | `description` | String | No | The app description. HTML is allowed. Maximum 10,000 characters. |
+    | `icon` | Object | No | The app icon. Set `type` to `PRESET` with a `key`, or `FILE` with a `file.fileKey`. |
+    | `theme` | String | No | The color theme (e.g., `WHITE`, `RED`, `GREEN`). |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/settings.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "name": "Updated App Name",
+        "theme": "BLUE"
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      name: 'Updated App Name',
+      theme: 'BLUE'
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/settings.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "4"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Process management
+
+<AccordionGroup>
+  <Accordion title="Get Process Management Settings — GET /k/v1/app/status.json">
+    Returns the process management (workflow status) settings for the live app. To retrieve draft settings, use `/k/v1/preview/app/status.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for status and action names. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `enable` | Boolean | Whether process management is enabled. |
+    | `states` | Object | A map of status names to status objects. |
+    | `actions` | Array | List of action (transition) objects. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/status.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/status.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Process Management Settings — PUT /k/v1/preview/app/status.json">
+    Updates the process management settings in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `enable` | Boolean | No | Whether to enable process management. |
+    | `states` | Object | No | A map of status names to status definition objects. |
+    | `actions` | Array | No | List of action (transition) objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/status.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "enable": true
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/preview/app/status.json', true), 'PUT', { app: 1, enable: true }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "4"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Customization
+
+<AccordionGroup>
+  <Accordion title="Get Customization — GET /k/v1/app/customize.json">
+    Returns the JavaScript and CSS files attached to the live app for customization. To retrieve the draft customization, use `/k/v1/preview/app/customize.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `scope` | String | The scope of the customization: `ALL`, `ADMIN`, or `NONE`. |
+    | `desktop` | Object | Customization files for the desktop view. Contains `js` and `css` arrays. |
+    | `mobile` | Object | Customization files for the mobile view. Contains `js` array. |
+    | `revision` | String | The current revision number. |
+
+    Each file entry contains `type` (`URL` or `FILE`) and either a `url` string or a `file` object.
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/customize.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/customize.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "scope": "ALL",
+      "desktop": {
+        "js": [
+          { "type": "URL", "url": "https://example.com/customize.js" }
+        ],
+        "css": []
+      },
+      "mobile": {
+        "js": []
+      },
+      "revision": "2"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update Customization — PUT /k/v1/preview/app/customize.json">
+    Updates the JavaScript and CSS customization files attached to the app in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `scope` | String | No | The scope: `ALL`, `ADMIN`, or `NONE`. |
+    | `desktop` | Object | No | Files for the desktop view. Contains `js` and `css` arrays. |
+    | `mobile` | Object | No | Files for the mobile view. Contains a `js` array. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    Each file entry must have `type` (`URL` or `FILE`) and either `url` or `file.fileKey`.
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/customize.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "scope": "ALL",
+        "desktop": {
+          "js": [
+            { "type": "URL", "url": "https://example.com/customize.js" }
+          ],
+          "css": []
+        }
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      scope: 'ALL',
+      desktop: {
+        js: [{ type: 'URL', url: 'https://example.com/customize.js' }],
+        css: []
+      }
+    };
+
+    kintone.api(kintone.api.url('/k/v1/preview/app/customize.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Permissions
+
+<AccordionGroup>
+  <Accordion title="Get App Permissions — GET /k/v1/app/acl.json">
+    Returns the access control list (ACL) for the live app. To retrieve the draft ACL, use `/k/v1/preview/app/acl.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `rights` | Array | List of permission rule objects. Each rule has `entity` (user/group/org), `appEditable`, `recordViewable`, `recordAddable`, `recordEditable`, `recordDeletable`, `recordImportable`, `recordExportable`. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/acl.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/acl.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update App Permissions — PUT /k/v1/app/acl.json">
+    Updates the access control list for the app. Changes take effect immediately on the live app — no deployment required.
+
+    <Warning>
+    This endpoint writes directly to the live app. Changes are not staged in draft.
+    </Warning>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `rights` | Array | Yes | List of permission rule objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/app/acl.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "rights": [
+          {
+            "entity": { "type": "CREATOR" },
+            "appEditable": true,
+            "recordViewable": true,
+            "recordAddable": true,
+            "recordEditable": true,
+            "recordDeletable": true
+          }
+        ]
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      rights: [
+        {
+          entity: { type: 'CREATOR' },
+          appEditable: true,
+          recordViewable: true,
+          recordAddable: true,
+          recordEditable: true,
+          recordDeletable: true
+        }
+      ]
+    };
+
+    kintone.api(kintone.api.url('/k/v1/app/acl.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Get Record Permissions — GET /k/v1/record/acl.json">
+    Returns the record-level ACL for the live app. To retrieve draft permissions, use `/k/v1/preview/record/acl.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/record/acl.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/record/acl.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Record Permissions — PUT /k/v1/record/acl.json">
+    Updates the record-level ACL for the live app. Changes take effect immediately — no deployment required.
+
+    <Warning>
+    This endpoint writes directly to the live app.
+    </Warning>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `rights` | Array | Yes | List of record permission rule objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/record/acl.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "rights": [
+          {
+            "filterCond": "",
+            "entities": [
+              { "entity": { "type": "CREATOR" }, "viewable": true, "editable": true, "deletable": true }
+            ]
+          }
+        ]
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Get Field Permissions — GET /k/v1/field/acl.json">
+    Returns the field-level ACL for the live app. To retrieve draft permissions, use `/k/v1/preview/field/acl.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/field/acl.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/field/acl.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Field Permissions — PUT /k/v1/field/acl.json">
+    Updates the field-level ACL for the live app. Changes take effect immediately — no deployment required.
+
+    <Warning>
+    This endpoint writes directly to the live app.
+    </Warning>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `rights` | Array | Yes | List of field permission rule objects. Each has `field` (field code), `entities` (array of entity + access level objects). |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/field/acl.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "rights": [
+          {
+            "field": "Customer_name",
+            "entities": [
+              { "entity": { "type": "CREATOR" }, "accessibility": "WRITE" }
+            ]
+          }
+        ]
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## Notifications
+
+<AccordionGroup>
+  <Accordion title="Get General Notification Settings — GET /k/v1/app/notifications/general.json">
+    Returns the general notification settings for the live app. To retrieve draft settings, use `/k/v1/preview/app/notifications/general.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/notifications/general.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/notifications/general.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update General Notification Settings — PUT /k/v1/preview/app/notifications/general.json">
+    Updates the general notification settings in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `notifications` | Array | No | List of notification rule objects. |
+    | `notifyToCommenter` | Boolean | No | Whether to notify commenters. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/notifications/general.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "notifyToCommenter": true
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Get Per Record Notification Settings — GET /k/v1/app/notifications/perRecord.json">
+    Returns per-record notification settings (notifications triggered by conditions on individual records) for the live app. To retrieve draft settings, use `/k/v1/preview/app/notifications/perRecord.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for notification titles. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/notifications/perRecord.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/notifications/perRecord.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Per Record Notification Settings — PUT /k/v1/preview/app/notifications/perRecord.json">
+    Updates per-record notification settings in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `notifications` | Array | No | List of per-record notification rule objects. Each has `filterCond`, `title`, and `targets`. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/notifications/perRecord.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "notifications": []
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Get Reminder Notification Settings — GET /k/v1/app/notifications/reminder.json">
+    Returns reminder notification settings for the live app. To retrieve draft settings, use `/k/v1/preview/app/notifications/reminder.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for notification titles. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/notifications/reminder.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/notifications/reminder.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Reminder Notification Settings — PUT /k/v1/preview/app/notifications/reminder.json">
+    Updates reminder notification settings in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `notifications` | Array | No | List of reminder notification objects. Each has `timing`, `filterCond`, `title`, and `targets`. |
+    | `timezone` | String | No | The timezone for reminder timing (e.g., `Asia/Tokyo`). |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/notifications/reminder.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "notifications": [],
+        "timezone": "Asia/Tokyo"
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## Graph settings
+
+<AccordionGroup>
+  <Accordion title="Get Graph Settings — GET /k/v1/app/reports.json">
+    Returns the graph (report) configurations for the live app. To retrieve draft settings, use `/k/v1/preview/app/reports.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for graph names. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/reports.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/reports.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Graph Settings — PUT /k/v1/preview/app/reports.json">
+    Updates the graph configurations in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `reports` | Object | Yes | A map of graph names to graph definition objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/reports.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "reports": {}
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## Action settings
+
+<AccordionGroup>
+  <Accordion title="Get Action Settings — GET /k/v1/app/actions.json">
+    Returns the action (copy record to another app) configurations for the live app. To retrieve draft settings, use `/k/v1/preview/app/actions.json`.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `lang` | String | No | Language code for action names. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/actions.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/actions.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+  </Accordion>
+
+  <Accordion title="Update Action Settings — PUT /k/v1/preview/app/actions.json">
+    Updates action configurations in draft. Deploy the app to make changes live.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `actions` | Object | Yes | A map of action names to action definition objects. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/preview/app/actions.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "actions": {}
+      }'
+    ```
+
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## App management
+
+<AccordionGroup>
+  <Accordion title="Move App to Space — POST /k/v1/app/move.json">
+    Moves an app into a space, or moves it out of a space.
+
+    <Note>
+    Only Kintone administrators or space administrators can use this endpoint.
+    </Note>
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `space` | Integer | No | The destination space ID. Omit or set to `null` to remove the app from its current space. |
+
+    ### Response
+
+    An empty object `{}` is returned on success.
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/app/move.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "space": 5
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = { app: 1, space: 5 };
+
+    kintone.api(kintone.api.url('/k/v1/app/move.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {}
+    ```
+  </Accordion>
+
+  <Accordion title="Get App Admin Notes — GET /k/v1/app/adminNotes.json">
+    Returns the admin notes for an app. Admin notes are only visible to app administrators.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `content` | String | The admin notes content. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/adminNotes.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/adminNotes.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "content": "This app is used by the sales team.",
+      "revision": "1"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Update App Admin Notes — PUT /k/v1/app/adminNotes.json">
+    Updates the admin notes for an app. Changes take effect immediately — no deployment required.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `content` | String | No | The admin notes content. Maximum 10,000 characters. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/app/adminNotes.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "content": "Updated notes for the sales team app."
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      content: 'Updated notes for the sales team app.'
+    };
+
+    kintone.api(kintone.api.url('/k/v1/app/adminNotes.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "2"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## App plug-ins
+
+<AccordionGroup>
+  <Accordion title="Get App Plug-ins — GET /k/v1/app/plugins.json">
+    Returns the list of plug-ins added to an app.
+
+    ### Query parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `offset` | Integer | No | Number of plug-ins to skip. Default: `0`. |
+    | `limit` | Integer | No | Number of plug-ins to return. Max: `100`. Default: `100`. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `plugins` | Array | List of plug-in objects. Each contains `id`, `name`, `enabled`, and optionally `links`. |
+    | `revision` | String | The current revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/app/plugins.json?app=1' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    kintone.api(kintone.api.url('/k/v1/app/plugins.json', true), 'GET', { app: 1 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "plugins": [
+        {
+          "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+          "name": "My Plug-in",
+          "enabled": true
+        }
+      ],
+      "revision": "2"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Add App Plug-ins — POST /k/v1/app/plugins.json">
+    Adds one or more installed plug-ins to an app. The plug-in must already be installed at the Kintone system level. See [REST API > Plug-ins](/rest-api/plugins) for system-level plug-in management.
+
+    ### Request body
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `app` | Integer | Yes | The app ID. |
+    | `ids` | Array of strings | Yes | The plug-in IDs to add. |
+    | `revision` | Integer | No | The expected revision number. Use `-1` to skip the check. |
+
+    ### Response properties
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `revision` | String | The new revision number. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/app/plugins.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "app": 1,
+        "ids": ["djmhffjhfgmebgnmcggopedaofckljlj"]
+      }'
+    ```
+
+    ```javascript JavaScript (kintone.api)
+    var body = {
+      app: 1,
+      ids: ['djmhffjhfgmebgnmcggopedaofckljlj']
+    };
+
+    kintone.api(kintone.api.url('/k/v1/app/plugins.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ```json Sample response
+    {
+      "revision": "3"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [Apps](/rest-api/apps) — Create apps and deploy settings changes
+- [Form fields](/rest-api/form-fields) — Manage form fields and layout
+- [Plug-ins](/rest-api/plugins) — Install and manage plug-ins at the system level

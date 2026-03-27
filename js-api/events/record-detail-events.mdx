@@ -1,0 +1,216 @@
+---
+title: "Record detail events"
+description: "Events triggered on the Kintone record detail page."
+---
+
+These events fire on the record detail (view) page. Use them to customize the detail view, prevent record deletion, or react to process management status changes.
+
+<Info>
+  Register all event handlers using `kintone.events.on()`. See [Event handling](/js-api/event-handling) for usage details.
+</Info>
+
+## Onload event
+
+Triggered after the record detail page is displayed.
+
+<Tabs>
+  <Tab title="Desktop — app.record.detail.show">
+    **Event type:** `app.record.detail.show`
+
+    **Triggered timing:** After the record detail page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.detail.show`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data displayed on the page. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var record = event.record;
+      console.log('Viewing record ID:', event.recordId);
+      console.log('Status:', record.Status.value);
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.detail.show">
+    **Event type:** `mobile.app.record.detail.show`
+
+    **Triggered timing:** After the record detail page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.detail.show`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data displayed on the page. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('mobile.app.record.detail.show', function(event) {
+      var record = event.record;
+      console.log('Viewing record on mobile:', event.recordId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Delete event
+
+Triggered when the **Delete** button is clicked in the confirmation dialog on the record detail page, before the record is deleted from the server.
+
+<Tabs>
+  <Tab title="Desktop — app.record.detail.delete.submit">
+    **Event type:** `app.record.detail.delete.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.detail.delete.submit`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data of the record to be deleted. |
+
+    **Canceling the deletion:**
+
+    You can cancel the deletion by doing one of the following:
+    - Set a record error on `event.error`
+    - Return `false`
+
+    **Available actions:** Return a `Promise` to delay the deletion until asynchronous operations finish.
+
+    ```js
+    kintone.events.on('app.record.detail.delete.submit', function(event) {
+      var record = event.record;
+
+      if (record.Archived.value === 'Yes') {
+        event.error = 'Archived records cannot be deleted.';
+        return event;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.detail.delete.submit">
+    **Event type:** `mobile.app.record.detail.delete.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.detail.delete.submit`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data of the record to be deleted. |
+
+    **Canceling the deletion:**
+
+    You can cancel the deletion by doing one of the following:
+    - Set a record error on `event.error`
+    - Return `false`
+
+    ```js
+    kintone.events.on('mobile.app.record.detail.delete.submit', function(event) {
+      if (event.record.Locked.value === 'Yes') {
+        event.error = 'This record cannot be deleted on mobile.';
+        return event;
+      }
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Update status event
+
+Triggered when an action button in the process management panel is clicked on the record detail page, before the status update is sent to the server.
+
+<Tabs>
+  <Tab title="Desktop — app.record.detail.process.proceed">
+    **Event type:** `app.record.detail.process.proceed`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.detail.process.proceed`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data at the time the action was triggered. |
+    | `action` | Object | The action that was clicked. |
+    | `action.value` | String | The name of the action. |
+    | `nextStatus` | Object | The status the record will transition to. |
+    | `nextStatus.value` | String | The name of the next status. |
+    | `assignee` | Object | The selected assignee (if applicable). |
+    | `assignee.value` | Array | An array of user objects for the selected assignee. |
+
+    **Canceling the status update:**
+
+    You can cancel the status update by doing one of the following:
+    - Set a record error on `event.error`
+    - Return `false`
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the status update proceeds.
+
+    ```js
+    kintone.events.on('app.record.detail.process.proceed', function(event) {
+      var record = event.record;
+
+      // Require a comment before proceeding to "Approved"
+      if (event.nextStatus.value === 'Approved' && !record.ApprovalNote.value) {
+        event.error = 'An approval note is required before approving.';
+        return event;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.record.detail.process.proceed">
+    **Event type:** `mobile.record.detail.process.proceed`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.record.detail.process.proceed`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data at the time the action was triggered. |
+    | `action` | Object | The action that was clicked. |
+    | `action.value` | String | The name of the action. |
+    | `nextStatus` | Object | The status the record will transition to. |
+    | `nextStatus.value` | String | The name of the next status. |
+    | `assignee` | Object | The selected assignee (if applicable). |
+    | `assignee.value` | Array | An array of user objects for the selected assignee. |
+
+    **Canceling the status update:**
+
+    You can cancel the status update by doing one of the following:
+    - Set a record error on `event.error`
+    - Return `false`
+
+    ```js
+    kintone.events.on('mobile.record.detail.process.proceed', function(event) {
+      console.log('Moving to status:', event.nextStatus.value);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>

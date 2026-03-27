@@ -1,0 +1,651 @@
+---
+title: "App APIs"
+description: "JavaScript APIs for reading app configuration and metadata in Kintone."
+---
+
+These APIs return information about the current app's configuration — including its ID, form fields, views, process management settings, and permissions. Most are read-only and available in both desktop and mobile environments.
+
+<Info>
+  App APIs return configuration from the **live** app. To read configuration from an app in the test environment, ensure you check `kintone.app.isTestEnvironment()` first.
+</Info>
+
+## App information
+
+<AccordionGroup>
+  <Accordion title="kintone.app.get()">
+    Returns information about the current app.
+
+    **Function**
+
+    ```js
+    kintone.app.get()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | `string` | The app ID. |
+    | `name` | `string` | The app name. |
+    | `description` | `string` | The app description. |
+    | `spaceId` | `string` \| `null` | The space ID the app belongs to, or `null`. |
+    | `threadId` | `string` \| `null` | The thread ID the app belongs to, or `null`. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var app = kintone.app.get();
+      console.log('App name:', app.name);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getId()">
+    Returns the ID of the current app.
+
+    **Function**
+
+    ```js
+    kintone.app.getId()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `number` \| `null` | The app ID, or `null` if not available on the current page. |
+
+    **Example**
+
+    ```js
+    var appId = kintone.app.getId();
+    console.log('App ID:', appId);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.isTestEnvironment()">
+    Returns whether the current page is using the app's test environment (preview mode).
+
+    **Function**
+
+    ```js
+    kintone.app.isTestEnvironment()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `boolean` | `true` if running in the test environment; `false` otherwise. |
+
+    **Example**
+
+    ```js
+    if (kintone.app.isTestEnvironment()) {
+      console.log('Running in test environment — changes are not live.');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.isMaintenanceMode()">
+    Returns whether the app is currently in maintenance mode.
+
+    **Function**
+
+    ```js
+    kintone.app.isMaintenanceMode()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `boolean` | `true` if the app is in maintenance mode; `false` otherwise. |
+
+    **Example**
+
+    ```js
+    if (kintone.app.isMaintenanceMode()) {
+      console.log('App is under maintenance.');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getPermissions()">
+    Returns the current user's permissions for the app.
+
+    **Function**
+
+    ```js
+    kintone.app.getPermissions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `hasReadPermission` | `boolean` | `true` if the user can view records in the app. |
+    | `hasAddPermission` | `boolean` | `true` if the user can create new records. |
+    | `hasEditPermission` | `boolean` | `true` if the user can edit records. |
+    | `hasDeletePermission` | `boolean` | `true` if the user can delete records. |
+    | `hasImportPermission` | `boolean` | `true` if the user can import records. |
+    | `hasExportPermission` | `boolean` | `true` if the user can export records. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var perms = kintone.app.getPermissions();
+      if (!perms.hasAddPermission) {
+        console.log('User cannot add records to this app.');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getIcons()">
+    Returns URLs for the app's icon images.
+
+    **Function**
+
+    ```js
+    kintone.app.getIcons()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `small` | `string` | URL of the small app icon. |
+    | `medium` | `string` | URL of the medium app icon. |
+    | `large` | `string` | URL of the large app icon. |
+
+    **Example**
+
+    ```js
+    var icons = kintone.app.getIcons();
+    console.log('App icon (large):', icons.large);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Form configuration
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getFormFields()">
+    Returns the form field definitions for the current app.
+
+    **Function**
+
+    ```js
+    kintone.app.getFormFields()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an object whose keys are field codes. Each value is a field definition object.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `type` | `string` | The field type (e.g., `"SINGLE_LINE_TEXT"`, `"NUMBER"`, `"DATE"`). |
+    | `code` | `string` | The field code. |
+    | `label` | `string` | The field label. |
+    | `required` | `boolean` | Whether the field is required. |
+    | `noLabel` | `boolean` | Whether the field label is hidden. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var fields = kintone.app.getFormFields();
+      Object.keys(fields).forEach(function(code) {
+        console.log(code, ':', fields[code].type);
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getFormLayout()">
+    Returns the form layout for the current app, describing the visual arrangement of fields.
+
+    **Function**
+
+    ```js
+    kintone.app.getFormLayout()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an array of layout row objects. Each row contains field elements with their type and field code.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `type` | `string` | Layout element type: `"ROW"`, `"SUBTABLE"`, or `"GROUP"`. |
+    | `fields` | `array` | Array of field layout elements within the row. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var layout = kintone.app.getFormLayout();
+      console.log('Form has', layout.length, 'rows.');
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Views
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getView()">
+    Returns the settings of the view currently displayed in the record list.
+
+    **Function**
+
+    ```js
+    kintone.app.getView()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | `string` | The view ID. |
+    | `type` | `string` | The view type: `"LIST"`, `"CALENDAR"`, or `"CUSTOM"`. |
+    | `name` | `string` | The view name. |
+    | `builtinType` | `string` \| `null` | For built-in views, the type identifier; otherwise `null`. |
+
+    **Available pages**
+
+    - Record list
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var view = kintone.app.getView();
+      console.log('Current view:', view.name, '(type:', view.type + ')');
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getViews()">
+    Returns all views configured for the current app.
+
+    **Function**
+
+    ```js
+    kintone.app.getViews()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an object whose keys are view names. Each value is a view settings object with the same shape as the return value of `kintone.app.getView()`.
+
+    **Available pages**
+
+    - Record list
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var views = kintone.app.getViews();
+      Object.keys(views).forEach(function(name) {
+        console.log('View:', name, 'ID:', views[name].id);
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Queries
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getQueryCondition()">
+    Returns the filter condition string from the current record list view query, without the `ORDER BY`, `LIMIT`, or `OFFSET` clauses.
+
+    **Function**
+
+    ```js
+    kintone.app.getQueryCondition()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `string` \| `null` | The filter condition (e.g., `"Status = \"Open\""`), or `null` if not available. |
+
+    **Available pages**
+
+    - Record list
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var condition = kintone.app.getQueryCondition();
+      console.log('Active filter:', condition);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getQuery()">
+    Returns the full query string for the current record list, including `ORDER BY`, `LIMIT`, and `OFFSET` clauses.
+
+    **Function**
+
+    ```js
+    kintone.app.getQuery()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `string` \| `null` | The full query string, or `null` if not available. |
+
+    **Available pages**
+
+    - Record list
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var query = kintone.app.getQuery();
+      // Example: 'Status = "Open" order by $id asc limit 20 offset 0'
+      console.log('Full query:', query);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related records and lookups
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getLookupTargetAppId()">
+    Returns the app ID of the target app for a Lookup field.
+
+    **Function**
+
+    ```js
+    kintone.app.getLookupTargetAppId(fieldCode)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | `string` | Yes | The field code of the Lookup field. |
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `number` \| `null` | The app ID of the Lookup target app, or `null` if the field is not a Lookup. |
+
+    **Example**
+
+    ```js
+    var targetAppId = kintone.app.getLookupTargetAppId('CustomerLookup');
+    console.log('Lookup target app ID:', targetAppId);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getRelatedRecordsTargetAppId()">
+    Returns the app ID of the target app for a Related Records field.
+
+    **Function**
+
+    ```js
+    kintone.app.getRelatedRecordsTargetAppId(fieldCode)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | `string` | Yes | The field code of the Related Records field. |
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `number` \| `null` | The app ID of the Related Records target app, or `null` if the field is not a Related Records field. |
+
+    **Example**
+
+    ```js
+    var relatedAppId = kintone.app.getRelatedRecordsTargetAppId('RelatedOrders');
+    console.log('Related records app ID:', relatedAppId);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Process management
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getStatus()">
+    Returns the process management settings for the current app, including all configured statuses and their transitions.
+
+    **Function**
+
+    ```js
+    kintone.app.getStatus()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `enable` | `boolean` | `true` if process management is enabled for the app. |
+    | `states` | `object` | An object whose keys are status names, each containing status configuration. |
+    | `actions` | `array` | An array of action objects describing available status transitions. |
+
+    <Note>
+      Returns `null` if process management is not enabled for the app.
+    </Note>
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var status = kintone.app.getStatus();
+      if (status && status.enable) {
+        console.log('Process management is active.');
+        console.log('Available statuses:', Object.keys(status.states));
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getStatusActions()">
+    Returns the process management actions available to the current user for the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getStatusActions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an array of action objects.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `name` | `string` | The action name as displayed in the UI. |
+    | `value` | `string` | The status the record will move to when this action is taken. |
+
+    **Available pages**
+
+    - Record detail
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var actions = kintone.app.record.getStatusActions();
+      actions.forEach(function(action) {
+        console.log('Action:', action.name, '-> Status:', action.value);
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getAssignees()">
+    Returns the current assignees for the process management step of the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getAssignees()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an array of assignee objects.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `code` | `string` | The login name of the assignee. |
+    | `name` | `string` | The display name of the assignee. |
+
+    **Available pages**
+
+    - Record detail
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var assignees = kintone.app.record.getAssignees();
+      assignees.forEach(function(user) {
+        console.log('Assignee:', user.name, '(' + user.code + ')');
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Categories
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getCategories()">
+    Returns the categories configured for the current app.
+
+    **Function**
+
+    ```js
+    kintone.app.getCategories()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `enable` | `boolean` | `true` if categories are enabled for the app. |
+    | `categories` | `array` | An array of category name strings. |
+
+    <Note>
+      Returns `null` if categories are not enabled for the app.
+    </Note>
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var cats = kintone.app.getCategories();
+      if (cats && cats.enable) {
+        console.log('Categories:', cats.categories);
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [Record APIs](/js-api/record-apis) — Read and modify record data
+- [Space APIs](/js-api/space-apis) — Read space information
+- [REST API: Apps](/rest-api/apps) — Manage app settings via REST
+- [REST API: Form fields](/rest-api/form-fields) — Manage form fields via REST

@@ -1,0 +1,121 @@
+---
+title: "Space APIs"
+description: "JavaScript APIs for reading space information in Kintone."
+---
+
+These APIs return information about the Kintone space that contains the current app. Use them in event handlers to read space metadata and check what the current user is permitted to do within the space.
+
+<Info>
+  Space APIs are available on both desktop and mobile. They return data only when the current app is inside a space. If the app is not in a space, these methods return `null`.
+</Info>
+
+## Space information
+
+<AccordionGroup>
+  <Accordion title="kintone.space.get()">
+    Returns information about the space the current app belongs to.
+
+    **Function**
+
+    ```js
+    kintone.space.get()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns a space object, or `null` if the app is not in a space.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | `string` | The space ID. |
+    | `name` | `string` | The space name. |
+    | `isPrivate` | `boolean` | `true` if the space is private. |
+    | `isGuest` | `boolean` | `true` if this is a guest space. |
+    | `useMultiThread` | `boolean` | `true` if the space uses multiple threads. |
+    | `fixedMember` | `boolean` | `true` if the space has a fixed member list. |
+    | `coverType` | `string` | Cover image type: `"BLOB"`, `"PRESET"`, or `"URL"`. |
+    | `coverKey` | `string` | The cover image key or URL depending on `coverType`. |
+    | `coverUrl` | `string` | The cover image URL. |
+    | `body` | `string` | The space body HTML. |
+    | `creator` | `object` | The user who created the space (`code` and `name`). |
+    | `modifier` | `object` | The user who last modified the space (`code` and `name`). |
+    | `memberCount` | `string` | The number of space members. |
+    | `roleCount` | `string` | The number of roles defined in the space. |
+    | `threadCount` | `string` | The number of threads in the space. |
+
+    **Available pages**
+
+    - Any page within an app that belongs to a space
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var space = kintone.space.get();
+      if (space) {
+        console.log('Space name:', space.name);
+        console.log('Private:', space.isPrivate);
+      } else {
+        console.log('This app is not in a space.');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.space.getPermissions()">
+    Returns the current user's permissions for the space the app belongs to.
+
+    **Function**
+
+    ```js
+    kintone.space.getPermissions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns a permissions object, or `null` if the app is not in a space.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `hasReadPermission` | `boolean` | `true` if the user can view the space. |
+    | `hasEditPermission` | `boolean` | `true` if the user can edit the space. |
+    | `hasAdminPermission` | `boolean` | `true` if the user has administrative access to the space. |
+
+    **Available pages**
+
+    - Any page within an app that belongs to a space
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var perms = kintone.space.getPermissions();
+      if (perms) {
+        if (perms.hasAdminPermission) {
+          console.log('User is a space admin.');
+        } else if (perms.hasEditPermission) {
+          console.log('User can edit the space.');
+        } else {
+          console.log('User has read-only access.');
+        }
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [App APIs](/js-api/app-apis) — Read app configuration and metadata
+- [System APIs](/js-api/system-apis) — Check system features and permissions
+- [REST API: Spaces](/rest-api/spaces) — Manage spaces via REST

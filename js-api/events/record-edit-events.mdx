@@ -1,0 +1,294 @@
+---
+title: "Record edit events"
+description: "Events triggered on the Kintone record edit page."
+---
+
+These events fire on the record edit page. Use them to pre-populate fields, validate inputs before saving, and respond after an existing record is successfully updated.
+
+<Info>
+  Register all event handlers using `kintone.events.on()`. See [Event handling](/js-api/event-handling) for usage details.
+</Info>
+
+## Onload event
+
+Triggered after the record edit page is displayed.
+
+<Tabs>
+  <Tab title="Desktop — app.record.edit.show">
+    **Event type:** `app.record.edit.show`
+
+    **Triggered timing:** After the record edit page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.edit.show`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data currently on the edit page. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page renders.
+
+    ```js
+    kintone.events.on('app.record.edit.show', function(event) {
+      var record = event.record;
+
+      // Lock a field if the record is in a certain status
+      if (record.Status.value === 'Approved') {
+        record.Budget.disabled = true;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.edit.show">
+    **Event type:** `mobile.app.record.edit.show`
+
+    **Triggered timing:** After the record edit page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.edit.show`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data on the edit page. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page renders.
+
+    ```js
+    kintone.events.on('mobile.app.record.edit.show', function(event) {
+      console.log('Editing record on mobile:', event.recordId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Save event
+
+Triggered when the **Save** button is clicked on the record edit page, before the data is sent to the server.
+
+<Tabs>
+  <Tab title="Desktop — app.record.edit.submit">
+    **Event type:** `app.record.edit.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.edit.submit`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data entered by the user. |
+
+    **Canceling the save:**
+
+    You can cancel the save by doing one of the following:
+    - Set a field error on `event.record[fieldCode].error`
+    - Set a record error on `event.error`
+    - Return `false`
+
+    **Available actions:**
+    - Overwrite field values
+    - Show field errors
+    - Show record errors
+    - Return a `Promise` to delay saving until asynchronous operations finish
+
+    ```js
+    kintone.events.on('app.record.edit.submit', function(event) {
+      var record = event.record;
+
+      // Enforce end date is after start date
+      if (record.StartDate.value && record.EndDate.value) {
+        if (record.EndDate.value < record.StartDate.value) {
+          record.EndDate.error = 'End date must be after the start date.';
+          return event;
+        }
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.edit.submit">
+    **Event type:** `mobile.app.record.edit.submit`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.edit.submit`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data entered by the user. |
+
+    **Canceling the save:**
+
+    You can cancel the save by doing one of the following:
+    - Set a field error on `event.record[fieldCode].error`
+    - Set a record error on `event.error`
+    - Return `false`
+
+    ```js
+    kintone.events.on('mobile.app.record.edit.submit', function(event) {
+      var record = event.record;
+
+      if (!record.Description.value) {
+        record.Description.error = 'A description is required.';
+        return event;
+      }
+
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Save success event
+
+Triggered after an existing record is successfully saved from the record edit page.
+
+<Warning>
+  This event does not trigger if the record fails to save.
+</Warning>
+
+<Tabs>
+  <Tab title="Desktop — app.record.edit.submit.success">
+    **Event type:** `app.record.edit.submit.success`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.edit.submit.success`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data of the saved record. |
+
+    **Available actions:** Set `event.url` to redirect the user to a specific URL after saving.
+
+    ```js
+    kintone.events.on('app.record.edit.submit.success', function(event) {
+      var record = event.record;
+      console.log('Record updated at:', record.Updated_datetime.value);
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.edit.submit.success">
+    **Event type:** `mobile.app.record.edit.submit.success`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.edit.submit.success`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data of the saved record. |
+
+    **Available actions:** Set `event.url` to redirect the user to a specific URL after saving.
+
+    ```js
+    kintone.events.on('mobile.app.record.edit.submit.success', function(event) {
+      console.log('Record saved on mobile:', event.recordId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Field change event
+
+Triggered when the value of a specified field changes on the record edit page. Replace `(fieldcode)` with the actual field code of the target field.
+
+**Supported field types:**
+
+- Single-line text *(triggers when the field loses focus or a lookup copies a value)*
+- Number *(triggers when the field loses focus or a lookup copies a value)*
+- Radio button
+- Check box
+- Multi-choice
+- Drop-down
+- Date
+- Time
+- Date and time
+- User selection
+- Department selection
+- Group selection
+- Rich text
+- Subtable (for changes within subtable rows)
+
+<Tabs>
+  <Tab title="Desktop — app.record.edit.change.(fieldcode)">
+    **Event type:** `app.record.edit.change.(fieldcode)`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.record.edit.change.(fieldcode)`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data at the time the field changed. |
+    | `changes` | Object | Data about the changed field and row. |
+    | `changes.field` | Object | The changed field object. |
+    | `changes.row` | Object or null | The subtable row that contains the changed field, or `null` if outside a subtable. |
+
+    **Available actions:**
+    - Overwrite field values
+    - Enable or disable field editing
+    - Show field errors
+    - Show record errors
+    - Return a `Promise` to wait for asynchronous operations
+
+    ```js
+    kintone.events.on('app.record.edit.change.Country', function(event) {
+      var record = event.record;
+
+      // Reset the region field when country changes
+      record.Region.value = '';
+
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.record.edit.change.(fieldcode)">
+    **Event type:** `mobile.app.record.edit.change.(fieldcode)`
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.record.edit.change.(fieldcode)`. |
+    | `appId` | Number | The app ID. |
+    | `recordId` | Number | The record ID. |
+    | `record` | Object | The record data at the time the field changed. |
+    | `changes` | Object | Data about the changed field and row. |
+    | `changes.field` | Object | The changed field object. |
+    | `changes.row` | Object or null | The subtable row containing the changed field, or `null`. |
+
+    **Available actions:**
+    - Overwrite field values
+    - Show field errors
+    - Return a `Promise` to wait for asynchronous operations
+
+    ```js
+    kintone.events.on('mobile.app.record.edit.change.Priority', function(event) {
+      var record = event.record;
+      console.log('Priority changed to:', record.Priority.value);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>

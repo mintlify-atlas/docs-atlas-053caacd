@@ -1,0 +1,594 @@
+---
+title: "Record APIs"
+description: "JavaScript APIs for reading and modifying record data in Kintone."
+---
+
+These APIs let you read and write record data from within Kintone customization code. Use them inside event handlers to access or update field values, check permissions, and retrieve process management history.
+
+<Info>
+  All record APIs are available on both desktop and mobile unless noted otherwise. Mobile equivalents use the `kintone.mobile.app.record` namespace.
+</Info>
+
+## Record data
+
+<AccordionGroup>
+  <Accordion title="kintone.app.record.getId()">
+    Returns the record ID of the record currently displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getId()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `number` \| `null` | The record ID, or `null` if not available on the current page. |
+
+    **Available pages**
+
+    - Record detail
+    - Record edit
+    - Record print
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var recordId = kintone.app.record.getId();
+      console.log('Record ID:', recordId);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.get()">
+    Returns the full record object for the record currently displayed on the page, including all field values.
+
+    **Function**
+
+    ```js
+    kintone.app.record.get()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an object with a `record` property containing field code keys and field value objects.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `record` | `object` | An object whose keys are field codes. Each value is a field object with `type` and `value` properties. |
+
+    **Available pages**
+
+    - Record detail
+    - Record create
+    - Record edit
+    - Record print
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.edit.show', function(event) {
+      var record = kintone.app.record.get();
+      console.log('Title field:', record.record['Title'].value);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.set(record)">
+    Updates field values on the record currently displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.set(record)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `record` | `object` | Yes | An object with a `record` property. The `record` property is an object whose keys are field codes and values are objects with a `value` property. |
+
+    **Return value**
+
+    None.
+
+    **Available pages**
+
+    - Record create
+    - Record edit
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.create.show', function(event) {
+      kintone.app.record.set({
+        record: {
+          'Status': {
+            value: 'In Progress'
+          }
+        }
+      });
+      return event;
+    });
+    ```
+
+    <Warning>
+      Calling `kintone.app.record.set()` outside of an event handler callback may cause unexpected behavior.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getPermissions()">
+    Returns the current user's permissions for the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getPermissions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `hasReadPermission` | `boolean` | `true` if the user can view the record. |
+    | `hasEditPermission` | `boolean` | `true` if the user can edit the record. |
+    | `hasDeletePermission` | `boolean` | `true` if the user can delete the record. |
+
+    **Available pages**
+
+    - Record detail
+    - Record edit
+    - Record create
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var perms = kintone.app.record.getPermissions();
+      if (!perms.hasEditPermission) {
+        console.log('User cannot edit this record.');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getFieldPermissions()">
+    Returns the current user's permissions for each field on the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getFieldPermissions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an object whose keys are field codes. Each value is a permissions object.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `hasReadPermission` | `boolean` | `true` if the user can view this field. |
+    | `hasEditPermission` | `boolean` | `true` if the user can edit this field. |
+
+    **Available pages**
+
+    - Record detail
+    - Record edit
+    - Record create
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var fieldPerms = kintone.app.record.getFieldPermissions();
+      if (!fieldPerms['ConfidentialNotes'].hasReadPermission) {
+        console.log('User cannot view the ConfidentialNotes field.');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getStatusHistory()">
+    Returns the process management status history for the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getStatusHistory()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an array of status history entries in chronological order.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `status` | `string` | The status name at this point in the history. |
+    | `assignee` | `object` \| `null` | The assignee at this point, or `null` if unassigned. |
+    | `time` | `string` | The ISO 8601 timestamp when this status was set. |
+
+    **Available pages**
+
+    - Record detail
+    - Record edit
+
+    <Note>
+      This method returns an empty array if process management is not enabled for the app.
+    </Note>
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var history = kintone.app.record.getStatusHistory();
+      history.forEach(function(entry) {
+        console.log(entry.status, entry.time);
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getActions()">
+    Returns the app actions available for the record displayed on the page.
+
+    **Function**
+
+    ```js
+    kintone.app.record.getActions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an array of action objects.
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | `string` | The action ID. |
+    | `name` | `string` | The display name of the action. |
+
+    **Available pages**
+
+    - Record detail
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.detail.show', function(event) {
+      var actions = kintone.app.record.getActions();
+      actions.forEach(function(action) {
+        console.log('Action:', action.name, '(id:', action.id + ')');
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Internal API requests
+
+Use these methods to call the Kintone REST API from within customization code without needing to manage authentication headers manually.
+
+<AccordionGroup>
+  <Accordion title="kintone.api(url, method, params, callback, errback)">
+    Sends a Kintone REST API request. Handles authentication automatically.
+
+    **Function**
+
+    ```js
+    // Callback style
+    kintone.api(url, method, params, callback, errback)
+
+    // Promise style
+    kintone.api(url, method, params)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `url` | `string` | Yes | The API endpoint URL. Use `kintone.api.url()` to build the URL. |
+    | `method` | `string` | Yes | HTTP method: `"GET"`, `"POST"`, `"PUT"`, or `"DELETE"`. |
+    | `params` | `object` | Yes | Request body or query parameters as a plain object. |
+    | `callback` | `function` | No | Called with the response object on success. If omitted, returns a Promise. |
+    | `errback` | `function` | No | Called with the error object on failure. |
+
+    **Return value**
+
+    Returns a `Promise` when `callback` is omitted; otherwise `undefined`.
+
+    **Example**
+
+    ```js
+    // Promise style
+    kintone.api(kintone.api.url('/k/v1/records', true), 'GET', {
+      app: kintone.app.getId(),
+      query: 'limit 10'
+    }).then(function(resp) {
+      console.log(resp.records);
+    }).catch(function(err) {
+      console.error(err);
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.api.url(path, detectGuestSpace)">
+    Builds the full URL for a Kintone REST API endpoint, automatically handling guest space paths.
+
+    **Function**
+
+    ```js
+    kintone.api.url(path, detectGuestSpace)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `path` | `string` | Yes | The API path, such as `"/k/v1/records"`. |
+    | `detectGuestSpace` | `boolean` | Yes | Set to `true` to automatically insert the guest space path segment when the app is inside a guest space. |
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `string` | The full URL for the API endpoint. |
+
+    **Example**
+
+    ```js
+    var url = kintone.api.url('/k/v1/records', true);
+    // In a guest space: '/k/guest/1/v1/records'
+    // In a normal space: '/k/v1/records'
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.api.urlForGet(path, params, detectGuestSpace)">
+    Builds a URL with query parameters appended, suitable for GET requests.
+
+    **Function**
+
+    ```js
+    kintone.api.urlForGet(path, params, detectGuestSpace)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `path` | `string` | Yes | The API path, such as `"/k/v1/record"`. |
+    | `params` | `object` | Yes | Query parameters as a plain object. |
+    | `detectGuestSpace` | `boolean` | Yes | Set to `true` to automatically insert the guest space path segment when in a guest space. |
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `string` | The full URL with query parameters encoded. |
+
+    **Example**
+
+    ```js
+    var url = kintone.api.urlForGet('/k/v1/record', {
+      app: 1,
+      id: 100
+    }, true);
+    // '/k/v1/record?app=1&id=100'
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getRequestToken()">
+    Returns the CSRF token for the current session. Required when making REST API requests directly with `XMLHttpRequest` or `fetch` instead of `kintone.api()`.
+
+    **Function**
+
+    ```js
+    kintone.getRequestToken()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `string` | The CSRF token string. |
+
+    <Note>
+      You do not need this token when using `kintone.api()`, which adds it automatically.
+    </Note>
+
+    **Example**
+
+    ```js
+    var token = kintone.getRequestToken();
+    fetch('/k/v1/records.json', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Cybozu-RequestToken': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ app: 1, record: {} })
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.api.getConcurrencyLimit()">
+    Returns information about the current API concurrency limit and the number of requests currently running.
+
+    **Function**
+
+    ```js
+    kintone.api.getConcurrencyLimit()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `limit` | `number` | The maximum number of concurrent API requests allowed. |
+    | `running` | `number` | The number of API requests currently in progress. |
+
+    **Example**
+
+    ```js
+    var info = kintone.api.getConcurrencyLimit();
+    console.log('Limit:', info.limit, '/ Running:', info.running);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Proxy requests
+
+Use these methods to call external APIs from Kintone customization code. Requests are routed through the Kintone server to avoid CORS restrictions.
+
+<Warning>
+  Proxy APIs require prior configuration in the Kintone admin settings or plug-in proxy settings. Direct external requests from browser code are blocked by CORS.
+</Warning>
+
+<AccordionGroup>
+  <Accordion title="kintone.proxy(url, method, headers, data, callback, errback)">
+    Sends an HTTP request to an external URL via the Kintone proxy.
+
+    **Function**
+
+    ```js
+    // Callback style
+    kintone.proxy(url, method, headers, data, callback, errback)
+
+    // Promise style
+    kintone.proxy(url, method, headers, data)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `url` | `string` | Yes | The external URL to call. |
+    | `method` | `string` | Yes | HTTP method: `"GET"`, `"POST"`, `"PUT"`, or `"DELETE"`. |
+    | `headers` | `object` | Yes | HTTP headers as a plain object. Pass `{}` for no custom headers. |
+    | `data` | `string` \| `object` | Yes | Request body. Pass `{}` for no body. |
+    | `callback` | `function` | No | Called with `(body, status, headers)` on success. If omitted, returns a Promise. |
+    | `errback` | `function` | No | Called with the error object on failure. |
+
+    **Return value**
+
+    When using the Promise style, resolves with an array `[body, status, headers]`.
+
+    | Index | Type | Description |
+    | :-- | :-- | :-- |
+    | `0` | `string` | The response body as a string. |
+    | `1` | `number` | The HTTP status code. |
+    | `2` | `object` | The response headers as a plain object. |
+
+    **Example**
+
+    ```js
+    kintone.proxy(
+      'https://api.example.com/data',
+      'GET',
+      { 'Authorization': 'Bearer MY_TOKEN' },
+      {}
+    ).then(function(args) {
+      var body = args[0];
+      var status = args[1];
+      console.log('Status:', status);
+      console.log('Body:', body);
+    }).catch(function(err) {
+      console.error(err);
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.proxy.upload(url, method, headers, data, callback, errback)">
+    Uploads a file to an external URL via the Kintone proxy.
+
+    **Function**
+
+    ```js
+    // Callback style
+    kintone.proxy.upload(url, method, headers, data, callback, errback)
+
+    // Promise style
+    kintone.proxy.upload(url, method, headers, data)
+    ```
+
+    **Parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `url` | `string` | Yes | The external URL to upload to. |
+    | `method` | `string` | Yes | HTTP method: `"POST"` or `"PUT"`. |
+    | `headers` | `object` | Yes | HTTP headers as a plain object. |
+    | `data` | `object` | Yes | An object with `contentType` (string) and `data` (string, base64-encoded file content) properties. |
+    | `callback` | `function` | No | Called with `(body, status, headers)` on success. If omitted, returns a Promise. |
+    | `errback` | `function` | No | Called with the error object on failure. |
+
+    **Return value**
+
+    When using the Promise style, resolves with an array `[body, status, headers]` — same structure as `kintone.proxy()`.
+
+    **Example**
+
+    ```js
+    kintone.proxy.upload(
+      'https://api.example.com/upload',
+      'POST',
+      { 'Authorization': 'Bearer MY_TOKEN' },
+      {
+        contentType: 'text/plain',
+        data: btoa('Hello, world!')
+      }
+    ).then(function(args) {
+      console.log('Upload status:', args[1]);
+    }).catch(function(err) {
+      console.error(err);
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [App APIs](/js-api/app-apis) — Read app configuration and metadata
+- [Event handling](/js-api/event-handling) — Register and remove event handlers
+- [REST API: Records](/rest-api/records) — Create, read, update, and delete records via REST

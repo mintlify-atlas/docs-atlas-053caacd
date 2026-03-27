@@ -1,0 +1,144 @@
+---
+title: "System APIs"
+description: "JavaScript APIs for checking system features, permissions, and license state."
+---
+
+These APIs return information about the Kintone system environment — including which features are available on the current instance, what the current user is permitted to do at the system level, and whether the subscription is in trial mode.
+
+<Info>
+  System APIs are available on both desktop and mobile.
+</Info>
+
+## Available features
+
+<AccordionGroup>
+  <Accordion title="kintone.system.getAvailableFeatures()">
+    Returns the features available on the current Kintone instance.
+
+    **Function**
+
+    ```js
+    kintone.system.getAvailableFeatures()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    Returns an object whose keys are feature identifiers. Each value is a boolean indicating whether the feature is available.
+
+    Common feature keys include:
+
+    | Feature key | Description |
+    | :-- | :-- |
+    | `portal` | The Kintone portal. |
+    | `space` | Spaces. |
+    | `people` | Kintone People (social features). |
+    | `notes` | Notes in spaces. |
+    | `file` | File management. |
+    | `presence` | User presence indicators. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var features = kintone.system.getAvailableFeatures();
+      if (features.space) {
+        console.log('Spaces are enabled on this instance.');
+      }
+      if (features.people) {
+        console.log('Kintone People is available.');
+      }
+      return event;
+    });
+    ```
+
+    <Tip>
+      Use this API before calling space or people APIs to gracefully handle instances where those features are disabled.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## System permissions
+
+<AccordionGroup>
+  <Accordion title="kintone.system.getPermissions()">
+    Returns the current user's system-level permissions.
+
+    **Function**
+
+    ```js
+    kintone.system.getPermissions()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `hasAdminPermission` | `boolean` | `true` if the user is a Kintone system administrator. |
+    | `hasUsersAdminPermission` | `boolean` | `true` if the user is a Users and System Administrator. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      var sysPerms = kintone.system.getPermissions();
+      if (sysPerms.hasAdminPermission) {
+        console.log('Current user is a Kintone system administrator.');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## License
+
+<AccordionGroup>
+  <Accordion title="kintone.license.isTrial()">
+    Returns whether the current Kintone subscription is in trial mode.
+
+    **Function**
+
+    ```js
+    kintone.license.isTrial()
+    ```
+
+    **Parameters**
+
+    None.
+
+    **Return value**
+
+    | Type | Description |
+    | :-- | :-- |
+    | `boolean` | `true` if the instance is on a trial subscription; `false` for paid subscriptions. |
+
+    **Example**
+
+    ```js
+    kintone.events.on('app.record.index.show', function(event) {
+      if (kintone.license.isTrial()) {
+        console.log('Running on a Kintone trial. Some features may be limited.');
+      }
+      return event;
+    });
+    ```
+
+    <Note>
+      Trial accounts may have restrictions on the number of users, storage, or available features. Use this API to conditionally adapt your customization behavior.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Related pages
+
+- [Space APIs](/js-api/space-apis) — Read space information
+- [App APIs](/js-api/app-apis) — Read app configuration and metadata
+- [General utilities](/js-api/general-utilities) — User info, design version, and other utilities

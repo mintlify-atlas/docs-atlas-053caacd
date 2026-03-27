@@ -1,0 +1,224 @@
+---
+title: "Authentication"
+description: "How to authenticate Kintone REST API requests using password, API token, or session authentication."
+---
+
+Every Kintone REST API request must be authenticated. Kintone supports three authentication methods: password authentication, API token authentication, and session authentication. Choose the method that suits your use case.
+
+<Note>
+For APIs that operate on a guest space, the URL path changes to `/k/guest/{spaceId}/v1/...`. The same authentication headers apply.
+</Note>
+
+<Tabs>
+  <Tab title="Password authentication">
+
+## Password authentication
+
+Use a Kintone user's login name and password, encoded as a Base64 string, to authenticate requests. This method is suitable for server-to-server integrations where you control the credentials.
+
+**When to use it:** Server-side scripts, backend integrations, or automated tools that run outside the browser.
+
+### How it works
+
+Combine the login name and password with a colon, then Base64-encode the result:
+
+```
+base64("{loginName}:{password}")
+```
+
+Pass the encoded value in the `X-Cybozu-Authorization` header.
+
+### Setup
+
+<Steps>
+  <Step title="Identify the Kintone user account">
+    Choose a Kintone user account for your integration. The API will have the same permissions as that user.
+  </Step>
+  <Step title="Encode the credentials">
+    Base64-encode the string `loginName:password`. For example, `admin:mypassword` encodes to `YWRtaW46bXlwYXNzd29yZA==`.
+
+    ```bash
+    echo -n 'admin:mypassword' | base64
+    # YWRtaW46bXlwYXNzd29yZA==
+    ```
+  </Step>
+  <Step title="Add the header to your request">
+    Include the encoded value in the `X-Cybozu-Authorization` header.
+  </Step>
+</Steps>
+
+### HTTP header
+
+```
+X-Cybozu-Authorization: {base64EncodedCredentials}
+```
+
+### Example
+
+```bash
+curl -X GET 'https://{subdomain}.kintone.com/k/v1/record.json?app=1&id=1' \
+  -H 'X-Cybozu-Authorization: YWRtaW46bXlwYXNzd29yZA=='
+```
+
+<Warning>
+Do not store credentials in source code. Use environment variables or a secrets manager to supply them at runtime.
+</Warning>
+
+  </Tab>
+  <Tab title="API token authentication">
+
+## API token authentication
+
+Each Kintone app can issue API tokens that grant specific permissions (such as read, write, or manage) to an application. API tokens are scoped to a single app.
+
+**When to use it:** External integrations, webhook consumers, and scripts that interact with a specific app. API tokens are preferred over password authentication because they are easier to revoke and scope.
+
+### Setup
+
+<Steps>
+  <Step title="Open app settings">
+    In Kintone, open the app you want to access. Click the **Settings** icon, then go to **App Settings** > **API Token**.
+  </Step>
+  <Step title="Generate a token">
+    Click **Generate**. Assign the required permissions (View Records, Add Records, Edit Records, Delete Records, Manage App) and save.
+  </Step>
+  <Step title="Copy the token">
+    Copy the generated token. Kintone does not display the token again after you leave the page.
+  </Step>
+  <Step title="Add the header to your request">
+    Pass the token in the `X-Cybozu-API-Token` header.
+  </Step>
+</Steps>
+
+### HTTP header
+
+```
+X-Cybozu-API-Token: {token}
+```
+
+### Multiple tokens
+
+If a single request involves multiple apps (for example, a bulk request that writes to two apps), pass all relevant tokens as a comma-separated list:
+
+```
+X-Cybozu-API-Token: {token1},{token2}
+```
+
+### Example
+
+<CodeGroup>
+
+```bash Single token
+curl -X GET 'https://{subdomain}.kintone.com/k/v1/record.json?app=1&id=1' \
+  -H 'X-Cybozu-API-Token: your-api-token-here'
+```
+
+```bash Multiple tokens
+curl -X POST 'https://{subdomain}.kintone.com/k/v1/bulkRequest.json' \
+  -H 'X-Cybozu-API-Token: token-for-app-1,token-for-app-2' \
+  -H 'Content-Type: application/json' \
+  -d '{"requests": [...]}'
+```
+
+</CodeGroup>
+
+<Tip>
+Generate separate tokens with the minimum required permissions for each integration. This limits the blast radius if a token is compromised.
+</Tip>
+
+  </Tab>
+  <Tab title="Session authentication">
+
+## Session authentication
+
+When your code runs inside a Kintone browser page (for example, in a JavaScript customization), the user's existing browser session authenticates API requests automatically. No additional header is required.
+
+**When to use it:** JavaScript customizations and plug-ins that run inside the Kintone browser UI.
+
+### How it works
+
+When you call `kintone.api()`, Kintone automatically attaches the current session credentials and a CSRF token to the request. You do not need to handle authentication manually.
+
+### Setup
+
+No configuration is required. Use the `kintone.api()` helper instead of making raw `fetch` or `XMLHttpRequest` calls.
+
+### HTTP header
+
+Session authentication is handled automatically by `kintone.api()`. If you make raw HTTP requests from inside a customization, you must include a CSRF token:
+
+```
+X-Requested-With: XMLHttpRequest
+```
+
+### Example
+
+```js
+var body = {
+  app: kintone.app.getId(),
+  id: 1
+};
+
+kintone.api(kintone.api.url('/k/v1/record.json', true), 'GET', body, function(resp) {
+  console.log(resp);
+}, function(error) {
+  console.log(error);
+});
+```
+
+<Note>
+`kintone.api()` uses session authentication automatically. You do not need to set any authentication headers when using this method.
+</Note>
+
+  </Tab>
+  <Tab title="OAuth 2.0">
+
+## OAuth 2.0
+
+Kintone supports OAuth 2.0 for delegated authorization. This allows third-party applications to access Kintone on behalf of a user without handling their credentials directly.
+
+**When to use it:** Third-party integrations where end users authorize access to their Kintone data through an OAuth consent flow.
+
+### How it works
+
+You register your application in the Kintone administration settings to obtain a client ID and client secret. Your application then redirects users through the standard OAuth 2.0 authorization code flow to obtain an access token. Pass the access token in the `Authorization` header.
+
+### HTTP header
+
+```
+Authorization: Bearer {accessToken}
+```
+
+### Example
+
+```bash
+curl -X GET 'https://{subdomain}.kintone.com/k/v1/record.json?app=1&id=1' \
+  -H 'Authorization: Bearer your-oauth-access-token'
+```
+
+<Info>
+Refer to the Kintone administration documentation for steps to register an OAuth client and configure the authorization flow.
+</Info>
+
+  </Tab>
+</Tabs>
+
+## Comparing authentication methods
+
+| Method | Best for | Scope | Revocable |
+| :-- | :-- | :-- | :-- |
+| Password | Server-side scripts | All apps the user can access | By changing the password |
+| API token | App-specific integrations | Single app, specific permissions | Individually, from app settings |
+| Session | In-browser customizations | The current user's permissions | When the session expires |
+| OAuth 2.0 | Third-party apps acting on behalf of a user | User-delegated permissions | Via token revocation |
+
+## Guest space URLs
+
+<Note>
+APIs that target a guest space use a different URL prefix: `/k/guest/{spaceId}/v1/...` instead of `/k/v1/...`. All authentication methods work the same way — only the path changes.
+
+**Example:**
+```
+https://{subdomain}.kintone.com/k/guest/5/v1/record.json
+```
+</Note>

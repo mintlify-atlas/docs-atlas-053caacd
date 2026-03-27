@@ -1,0 +1,254 @@
+---
+title: "Plug-in APIs"
+description: "JavaScript APIs for building and configuring Kintone plug-ins."
+---
+
+Kintone plug-ins are packaged JavaScript customizations that app administrators can install into one or more Kintone apps. Unlike per-app JavaScript files, a plug-in is distributed as a single `.plugin` package and can be configured independently in each app where it is installed.
+
+Plug-ins consist of two main parts:
+
+- **Customization code** — runs inside apps and uses standard JavaScript APIs plus the plug-in APIs listed here to read its configuration
+- **Settings page** — a custom HTML/JS page where administrators configure the plug-in for each app
+
+The plug-in APIs below handle configuration storage, retrieval, and making authenticated proxy requests to external services.
+
+<Info>
+  Plug-in development requires you to first register your plug-in and obtain a plug-in ID. Refer to the [Kintone plug-in documentation](https://kintone.dev) for the full development workflow.
+</Info>
+
+## Configuration
+
+<AccordionGroup>
+  <Accordion title="kintone.plugin.app.getConfig(pluginId)">
+    Returns the configuration object saved for a plug-in in the current app. Use this in your customization code to read settings that were saved by the plug-in's settings page.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `pluginId` | string | Yes | The plug-in ID |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | object | Key-value pairs where all keys and values are strings. Returns an empty object if no config has been saved. |
+
+    #### Example
+
+    ```js
+    // In your plug-in's customization code
+    (function (PLUGIN_ID) {
+      kintone.events.on('app.record.index.show', (event) => {
+        const config = kintone.plugin.app.getConfig(PLUGIN_ID);
+        console.log('API endpoint:', config.apiEndpoint);
+        return event;
+      });
+    })(kintone.$PLUGIN_ID);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.plugin.app.setConfig(config, callback)">
+    Saves the plug-in configuration for the current app. Call this from your plug-in's settings page when the user saves their settings.
+
+    **Available pages:** Plug-in settings page only
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `config` | object | Yes | Key-value pairs to save. All keys and values must be strings. |
+    | `callback` | function | No | Callback invoked after the config is saved successfully |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    // In your plug-in's config.html settings page
+    document.getElementById('save-btn').addEventListener('click', () => {
+      const endpoint = document.getElementById('endpoint').value;
+      kintone.plugin.app.setConfig(
+        { apiEndpoint: endpoint },
+        () => {
+          alert('Settings saved.');
+          window.location.href = '../../flow?app=' + kintone.app.getId();
+        }
+      );
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Proxy configuration
+
+When your plug-in makes requests to external services, proxy configuration lets you securely store and reuse authentication credentials (such as API keys or OAuth tokens) without exposing them in client-side JavaScript.
+
+<AccordionGroup>
+  <Accordion title="kintone.plugin.app.setProxyConfig(url, method, headers, data, callback)">
+    Saves proxy authentication configuration for a specific URL and HTTP method combination. Call this from your plug-in's settings page.
+
+    **Available pages:** Plug-in settings page only
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `url` | string | Yes | The target URL for proxy requests |
+    | `method` | string | Yes | HTTP method: `GET`, `POST`, `PUT`, or `DELETE` |
+    | `headers` | object | Yes | Request headers to store. All keys and values must be strings. |
+    | `data` | object | Yes | Request body data to store. All keys and values must be strings. |
+    | `callback` | function | No | Callback invoked after the proxy config is saved |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.plugin.app.setProxyConfig(
+      'https://api.example.com/data',
+      'GET',
+      { Authorization: 'Bearer my-token' },
+      {},
+      () => console.log('Proxy config saved')
+    );
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.plugin.app.getProxyConfig(url, method)">
+    Returns the stored proxy configuration for a given URL and HTTP method. Use this in your customization code to retrieve credentials saved by the settings page without exposing them directly.
+
+    **Available pages:** All pages (desktop and mobile). Also available on the plug-in settings page.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `url` | string | Yes | The target URL |
+    | `method` | string | Yes | HTTP method: `GET`, `POST`, `PUT`, or `DELETE` |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | object | An object with `headers` and `data` properties containing the stored configuration |
+
+    #### Example
+
+    ```js
+    const proxyConfig = kintone.plugin.app.getProxyConfig(
+      'https://api.example.com/data',
+      'GET'
+    );
+    console.log(proxyConfig.headers); // { Authorization: 'Bearer my-token' }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Proxy requests
+
+The plug-in proxy APIs let you make authenticated HTTP requests to external services from within Kintone. Requests are routed through the Kintone server, which appends any stored proxy configuration (headers and body data). This keeps credentials off the client.
+
+<AccordionGroup>
+  <Accordion title="kintone.plugin.app.proxy(pluginId, url, method, headers, data, callback, errback)">
+    Makes an HTTP request to an external URL via the Kintone proxy. Headers and body data from stored proxy configuration are automatically merged with the request.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `pluginId` | string | Yes | The plug-in ID |
+    | `url` | string | Yes | The target URL |
+    | `method` | string | Yes | HTTP method: `GET`, `POST`, `PUT`, or `DELETE` |
+    | `headers` | object | Yes | Additional request headers. Merged with any stored proxy headers. |
+    | `data` | object \| string | Yes | Request body. For `GET`/`DELETE`, use an empty object `{}`. |
+    | `callback` | function | No | Success callback. Receives `(body, status, headers)`. |
+    | `errback` | function | No | Error callback. Receives `(body, status, headers)`. |
+
+    #### Return value
+
+    Returns a Promise if no callback is provided. The Promise resolves with `[body, status, headers]`.
+
+    #### Example
+
+    ```js
+    (function (PLUGIN_ID) {
+      kintone.events.on('app.record.index.show', async (event) => {
+        const config = kintone.plugin.app.getConfig(PLUGIN_ID);
+        const [body, status] = await kintone.plugin.app.proxy(
+          PLUGIN_ID,
+          config.apiEndpoint,
+          'GET',
+          {},
+          {}
+        );
+        if (status === 200) {
+          console.log('Response:', JSON.parse(body));
+        }
+        return event;
+      });
+    })(kintone.$PLUGIN_ID);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.plugin.app.proxy.upload(pluginId, url, method, headers, data, callback, errback)">
+    Uploads a file to an external URL via the Kintone proxy. Use this variant instead of `proxy()` when your request body is `FormData` (for example, uploading a file attachment).
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `pluginId` | string | Yes | The plug-in ID |
+    | `url` | string | Yes | The target URL |
+    | `method` | string | Yes | HTTP method: `POST` or `PUT` |
+    | `headers` | object | Yes | Additional request headers |
+    | `data` | FormData | Yes | The `FormData` object containing the file to upload |
+    | `callback` | function | No | Success callback. Receives `(body, status, headers)`. |
+    | `errback` | function | No | Error callback. Receives `(body, status, headers)`. |
+
+    #### Return value
+
+    Returns a Promise if no callback is provided. The Promise resolves with `[body, status, headers]`.
+
+    #### Example
+
+    ```js
+    (function (PLUGIN_ID) {
+      kintone.events.on('app.record.detail.show', async (event) => {
+        const fileInput = document.getElementById('file-input');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const [body, status] = await kintone.plugin.app.proxy.upload(
+          PLUGIN_ID,
+          'https://upload.example.com/files',
+          'POST',
+          {},
+          formData
+        );
+        console.log('Upload status:', status);
+        return event;
+      });
+    })(kintone.$PLUGIN_ID);
+    ```
+
+    <Note>
+      Stored proxy configuration headers and body data are not merged when using `proxy.upload()`. Pass all required authentication headers explicitly.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [General utilities](/js-api/general-utilities) — User info, dialogs, and environment detection
+- [REST API: Plug-ins](/rest-api/plugins) — Manage plug-in installations via the REST API

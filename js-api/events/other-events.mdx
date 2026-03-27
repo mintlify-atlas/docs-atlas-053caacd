@@ -1,0 +1,238 @@
+---
+title: "Other events"
+description: "Graph, portal, space, and print events in Kintone."
+---
+
+These events fire on pages other than record list, detail, create, and edit pages — including graph views, the Kintone portal, space portals, and the record print view.
+
+<Info>
+  Register all event handlers using `kintone.events.on()`. See [Event handling](/js-api/event-handling) for usage details.
+</Info>
+
+## Graph display event
+
+Triggered after the graph (report) page is displayed.
+
+<Note>
+  This event also fires when displaying graph types not supported on mobile (pivot table, table, and scheduled reports). The `mobile.app.report.show` event still fires in these cases.
+</Note>
+
+<Warning>
+  This event cannot be used with apps embedded in a space.
+</Warning>
+
+<Tabs>
+  <Tab title="Desktop — app.report.show">
+    **Event type:** `app.report.show`
+
+    **Triggered timing:** After the graph page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `app.report.show`. |
+    | `appId` | Number | The app ID. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('app.report.show', function(event) {
+      console.log('Graph page loaded for app:', event.appId);
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.app.report.show">
+    **Event type:** `mobile.app.report.show`
+
+    **Triggered timing:** After the graph page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.app.report.show`. |
+    | `appId` | Number | The app ID. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations before the page continues rendering.
+
+    ```js
+    kintone.events.on('mobile.app.report.show', function(event) {
+      console.log('Graph page loaded on mobile for app:', event.appId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Portal display event
+
+Triggered after the Kintone portal page is displayed.
+
+<Note>
+  This event fires after all widgets configured for the portal have finished rendering.
+</Note>
+
+<Warning>
+  This event does not fire on guest user portals or on portals beyond the first portal page.
+</Warning>
+
+<Tabs>
+  <Tab title="Desktop — portal.show">
+    **Event type:** `portal.show`
+
+    **Triggered timing:** After the portal page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `portal.show`. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations.
+
+    ```js
+    kintone.events.on('portal.show', function(event) {
+      // Add custom content to the portal
+      var el = kintone.portal.getContentSpaceElement();
+      if (el) {
+        var msg = document.createElement('p');
+        msg.textContent = 'Welcome to the portal!';
+        el.appendChild(msg);
+      }
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.portal.show">
+    **Event type:** `mobile.portal.show`
+
+    **Triggered timing:** After the portal page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.portal.show`. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations.
+
+    ```js
+    kintone.events.on('mobile.portal.show', function(event) {
+      console.log('Mobile portal loaded.');
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Space display event
+
+Triggered after a space portal page is displayed.
+
+<Note>
+  This event fires after all widgets configured for the space portal have finished rendering.
+</Note>
+
+<Warning>
+  This event only fires in spaces with **Use a portal and multiple threads** enabled. It does not fire on guest space portals.
+</Warning>
+
+<Tabs>
+  <Tab title="Desktop — space.portal.show">
+    **Event type:** `space.portal.show`
+
+    **Triggered timing:** After the space portal page is displayed.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `space.portal.show`. |
+    | `spaceId` | String | The space ID. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations.
+
+    ```js
+    kintone.events.on('space.portal.show', function(event) {
+      console.log('Space portal loaded. Space ID:', event.spaceId);
+      var el = kintone.space.portal.getContentSpaceElement();
+      if (el) {
+        var banner = document.createElement('div');
+        banner.textContent = 'Welcome to this space!';
+        el.prepend(banner);
+      }
+      return event;
+    });
+    ```
+  </Tab>
+  <Tab title="Mobile — mobile.space.portal.show">
+    **Event type:** `mobile.space.portal.show`
+
+    **Triggered timing:** After the space portal page is displayed on mobile.
+
+    **Event object properties:**
+
+    | Property | Type | Description |
+    | :--- | :--- | :--- |
+    | `type` | String | The event type. Returns `mobile.space.portal.show`. |
+    | `spaceId` | String | The space ID. |
+
+    **Available actions:** Return a `Promise` to wait for asynchronous operations.
+
+    ```js
+    kintone.events.on('mobile.space.portal.show', function(event) {
+      console.log('Space portal loaded on mobile. Space ID:', event.spaceId);
+      return event;
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Record print event
+
+**Event type:** `app.record.print.show`
+
+<Warning>
+  This event is only available on desktop. There is no mobile equivalent.
+</Warning>
+
+Triggered after the record print page is displayed.
+
+**Triggered timing:** After the record print page is displayed.
+
+**Event object properties:**
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | The event type. Returns `app.record.print.show`. |
+| `appId` | Number | The app ID. |
+| `recordId` | Number | The record ID. |
+| `record` | Object | The record data displayed on the print page. |
+
+**Available actions:** Return a `Promise` to wait for asynchronous operations before the print page renders.
+
+```js
+kintone.events.on('app.record.print.show', function(event) {
+  var record = event.record;
+  console.log('Printing record ID:', event.recordId);
+
+  // Add a custom watermark element to the print view
+  var header = kintone.app.record.getHeaderMenuSpaceElement();
+  if (header) {
+    var watermark = document.createElement('p');
+    watermark.textContent = 'CONFIDENTIAL';
+    watermark.style.color = 'red';
+    header.appendChild(watermark);
+  }
+
+  return event;
+});
+```

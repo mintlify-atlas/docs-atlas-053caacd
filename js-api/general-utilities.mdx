@@ -1,0 +1,811 @@
+---
+title: "General utilities"
+description: "Utility functions for user info, UI dialogs, notifications, and page navigation in Kintone."
+---
+
+The general utility APIs provide access to the current user's information, Kintone environment details, dialog and notification UI, page URL generation, and keyboard shortcut management.
+
+## User information
+
+<AccordionGroup>
+  <Accordion title="kintone.getLoginUser()">
+    Returns information about the currently logged-in user. Works for both regular and guest users.
+
+    **Available pages:** All pages (desktop and mobile), including the plug-in settings page
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    Returns an object with the following properties:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | string | System-assigned user ID |
+    | `code` | string | Login name. For guest users, this is the email address. |
+    | `name` | string | Display name. For guest users, this is the user's name. |
+    | `email` | string | Email address |
+    | `url` | string | Profile URL. Empty string for guest users. |
+    | `employeeNumber` | string | Employee ID. Empty string for guest users. |
+    | `phone` | string | Phone number |
+    | `mobilePhone` | string | Mobile phone number. Empty string for guest users. |
+    | `extensionNumber` | string | Extension number. Empty string for guest users. |
+    | `timezone` | string | User's timezone |
+    | `isGuest` | boolean | `true` if the user is a guest user |
+    | `language` | string | User's display language: `ja`, `en`, `zh`, `zh-TW`, `es`, `pt-BR`, `th`. Unsupported locales return `en`. |
+
+    #### Example
+
+    ```js
+    const user = kintone.getLoginUser();
+    console.log(user.name);     // "Jane Smith"
+    console.log(user.language); // "en"
+    console.log(user.isGuest);  // false
+    ```
+
+    <Tip>
+      Use the REST API's Get User endpoint if you need more detailed user profile information.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="kintone.user.getCustomFields(code)">
+    Returns the custom profile fields configured for a user. When retrieving fields for the currently logged-in user, private fields are also returned.
+
+    **Available pages:** All pages (desktop and mobile). Not available on search, app store, or plug-in settings pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `code` | string | No | Login name of the user whose fields to retrieve. Omit to retrieve the logged-in user's fields. |
+
+    #### Return value
+
+    Returns a Promise that resolves to an array of objects:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `code` | string | Field code |
+    | `name` | string | Field label |
+    | `type` | string | Field type: `SINGLE_LINE_TEXT` or `USER_SELECT` |
+    | `value` | string \| object | Saved value. String for `SINGLE_LINE_TEXT`; object for `USER_SELECT`. |
+    | `value.code` | string | User code (only for `USER_SELECT` type) |
+    | `value.name` | string | User display name (only for `USER_SELECT` type) |
+    | `visibility` | string | `PUBLIC` or `PRIVATE` |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const fields = await kintone.user.getCustomFields();
+      fields.forEach((f) => console.log(f.code, f.value));
+      return event;
+    });
+    ```
+
+    <Warning>
+      This API fetches data from the server. Responses are cached until the next page navigation. If the per-user rate limit of 50 server requests per minute is exceeded, the returned Promise will be rejected.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="kintone.user.getGroups(code)">
+    Returns the groups (roles) that a user belongs to. When called from a guest space, only `Everyone` and `Administrator` groups are returned.
+
+    **Available pages:** All pages (desktop and mobile). Not available on search, app store, or plug-in settings pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `code` | string | No | Login name of the user whose groups to retrieve. Omit to retrieve the logged-in user's groups. |
+
+    #### Return value
+
+    Returns a Promise that resolves to an array of objects:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | string | Group ID |
+    | `code` | string | Group code |
+    | `name` | string | Group name |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const groups = await kintone.user.getGroups();
+      const isAdmin = groups.some((g) => g.code === 'Administrators');
+      if (!isAdmin) {
+        kintone.app.showAddRecordButton(false);
+      }
+      return event;
+    });
+    ```
+
+    <Warning>
+      This API fetches data from the server. If the per-user rate limit of 50 server requests per minute is exceeded, the returned Promise will be rejected.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="kintone.user.getOrganizations(code)">
+    Returns the departments (organizations) that a user belongs to, including their title within each department. Values for fields that support multiple languages are returned in the language of the logged-in user.
+
+    **Available pages:** All pages (desktop and mobile). Not available on search, app store, or plug-in settings pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `code` | string | No | Login name of the user whose departments to retrieve. Omit to retrieve the logged-in user's departments. |
+
+    #### Return value
+
+    Returns a Promise that resolves to an array of objects:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `organization.id` | string | Department ID |
+    | `organization.code` | string | Department code |
+    | `organization.name` | string | Department name |
+    | `organization.primary` | boolean | `true` if this is the user's primary department |
+    | `title` | object \| null | The user's title within the department. `null` if not set. |
+    | `title.id` | string | Title ID |
+    | `title.code` | string | Title code |
+    | `title.name` | string | Title name |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const orgs = await kintone.user.getOrganizations();
+      const primary = orgs.find((o) => o.organization.primary);
+      console.log('Primary department:', primary?.organization.name);
+      return event;
+    });
+    ```
+
+    <Warning>
+      This API fetches data from the server. If the per-user rate limit of 50 server requests per minute is exceeded, the returned Promise will be rejected.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="kintone.user.getPageType()">
+    Returns the type of the current page.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | string | The current page type identifier |
+
+    #### Example
+
+    ```js
+    const pageType = kintone.user.getPageType();
+    console.log(pageType);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.user.getIcons()">
+    Returns the icon URLs for a user.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | object | An object containing user icon URLs |
+
+    #### Example
+
+    ```js
+    const icons = kintone.user.getIcons();
+    console.log(icons);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Environment information
+
+<AccordionGroup>
+  <Accordion title="kintone.getUiVersion()">
+    Returns the UI design version of the current page. Use this to detect whether the user is running the legacy or the revamped Kintone UI.
+
+    **Available pages:** All pages (desktop and mobile), including the plug-in settings page
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | number | `1` — legacy desktop UI or mobile; `2` — revamped desktop UI |
+
+    #### Example
+
+    ```js
+    const version = kintone.getUiVersion();
+    if (version === 2) {
+      console.log('Running revamped UI');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getAvailableServices()">
+    Returns which other cybozu.com services are available in the current environment.
+
+    **Available pages:** All pages (desktop and mobile). Not available on search, app store, or plug-in settings pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    Returns a Promise that resolves to an object:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `garoon` | boolean | `true` if Garoon is available |
+    | `office` | boolean | `true` if Cybozu Office is available |
+    | `mailwise` | boolean | `true` if Mailwise is available |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const services = await kintone.getAvailableServices();
+      if (services.garoon) {
+        console.log('Garoon integration is available');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getDomain()">
+    Returns the domain information for the current Kintone environment.
+
+    **Available pages:** All pages (desktop and mobile), including the plug-in settings page. Not available on search or app store pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    Returns a Promise that resolves to an object:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `subdomain` | string | The subdomain name |
+    | `baseDomain` | string | The base domain: `cybozu.com`, `cybozu.cn`, or `kintone.com` |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const domain = await kintone.getDomain();
+      console.log(`${domain.subdomain}.${domain.baseDomain}`);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getAvailableApiTypes()">
+    Returns which API types are available in the current environment. Use this to detect whether the Wide Plan APIs are available.
+
+    **Available pages:** All pages (desktop and mobile), including the plug-in settings page. Not available on search or app store pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    Returns a Promise that resolves to an array of strings. Order is not guaranteed.
+
+    | Value | Description |
+    | :-- | :-- |
+    | `CORE` | Generally available APIs |
+    | `WIDE` | APIs exclusive to the Wide Plan |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const types = await kintone.getAvailableApiTypes();
+      if (types.includes('WIDE')) {
+        console.log('Wide plan APIs are available');
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.isAccessWithClientCertificateAuthentication()">
+    Returns whether the user accessed Kintone using client certificate authentication.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the current session uses client certificate authentication |
+
+    #### Example
+
+    ```js
+    if (kintone.isAccessWithClientCertificateAuthentication()) {
+      console.log('Client certificate authentication is active');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.isMobileApp()">
+    Returns whether the current page is a Kintone mobile app page.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the current page is a mobile app page |
+
+    #### Example
+
+    ```js
+    if (kintone.isMobileApp()) {
+      console.log('Running in mobile app');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.isMobilePage()">
+    Returns whether the current page is any mobile Kintone page.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the current page is a mobile page |
+
+    #### Example
+
+    ```js
+    if (kintone.isMobilePage()) {
+      // Apply mobile-specific customization
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getUserPreference()">
+    Returns the current user's personal preference settings.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | object | An object containing user preference settings |
+
+    #### Example
+
+    ```js
+    const prefs = kintone.getUserPreference();
+    console.log(prefs);
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.isUsersAndSystemAdministrator()">
+    Returns whether the logged-in user has Users & System Administrator privileges.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the user has Users & System Administrator privileges |
+
+    #### Example
+
+    ```js
+    if (kintone.isUsersAndSystemAdministrator()) {
+      // Show admin controls
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.isRevampedUI()">
+    Returns whether the current page is using the revamped Kintone UI. This is an alternative to checking `kintone.getUiVersion() === 2`.
+
+    **Available pages:** All pages (desktop and mobile)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the revamped UI is active |
+
+    #### Example
+
+    ```js
+    if (kintone.isRevampedUI()) {
+      // Apply revamped-UI-specific styling
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Dialogs and notifications
+
+<AccordionGroup>
+  <Accordion title="kintone.showConfirmDialog(options)">
+    Displays a confirmation dialog with **OK** and **Cancel** buttons.
+
+    **Available pages:** Desktop only. Not available on search or app store pages.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `options` | object | Yes | Dialog configuration |
+    | `options.title` | string | No | Dialog title |
+    | `options.message` | string | No | Dialog body message |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Promise\<string\> | Resolves with `OK` or `CANCEL` based on the user's selection |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.delete.submit', async (event) => {
+      const result = await kintone.showConfirmDialog({
+        title: 'Delete record',
+        message: 'Are you sure you want to delete this record?',
+      });
+      if (result !== 'OK') {
+        // Cancel the delete
+        return false;
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.createDialog(options)">
+    Creates a fully customizable dialog. The dialog content is defined by a DOM element you provide, giving you full control over the layout and interaction.
+
+    **Available pages:** Desktop only. Not available on search or app store pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `options` | object | Yes | Dialog configuration |
+    | `options.title` | string | No | Dialog title. Omitted if not set. |
+    | `options.body` | Element | No | DOM element to render as the dialog body. Omitted if not set. |
+    | `options.showOkButton` | boolean | No | Show an OK button. Defaults to `true`. |
+    | `options.okButtonText` | string | No | Label for the OK button. Defaults to the localized "OK". |
+    | `options.showCancelButton` | boolean | No | Show a Cancel button. Defaults to `false`. |
+    | `options.cancelButtonText` | string | No | Label for the Cancel button. Defaults to the localized "Cancel". |
+    | `options.showCloseButton` | boolean | No | Show a close (X) button. Defaults to `false`. When `false`, the Escape key is also disabled. |
+    | `options.beforeClose` | function | No | Callback invoked before the dialog closes. Receives one of `OK`, `CANCEL`, or `CLOSE`. Return `false` (or a Promise resolving to `false`) to prevent the dialog from closing. |
+
+    #### Return value
+
+    Returns a Promise that resolves to an object:
+
+    | Property | Type | Description |
+    | :-- | :-- | :-- |
+    | `show` | function | Async function that displays the dialog. Returns a Promise that resolves with the user's action: `OK`, `CANCEL`, `CLOSE`, or `FUNCTION`. |
+    | `close` | function | Closes the dialog programmatically. No arguments or return value. |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', async (event) => {
+      const bodyEl = document.createElement('p');
+      bodyEl.textContent = 'Do you want to delete this record?';
+
+      const dialog = await kintone.createDialog({
+        title: 'Confirm',
+        body: bodyEl,
+        okButtonText: 'Delete',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        showCloseButton: true,
+        beforeClose: (action) => {
+          if (action === 'OK') {
+            console.log('Delete confirmed');
+          }
+        },
+      });
+
+      const result = await dialog.show();
+      console.log('Dialog closed with:', result);
+      return event;
+    });
+    ```
+
+    <Warning>
+      The `options.body` Element is embedded directly in the dialog DOM. Sanitize any user-generated content before passing it as the body.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="kintone.showNotification(options)">
+    Displays a brief notification message to the user.
+
+    **Available pages:** Desktop only. Not available on search or app store pages.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `options` | object | Yes | Notification configuration |
+    | `options.text` | string | Yes | The message to display |
+    | `options.type` | string | No | Notification style: `success`, `danger`, or `infoDialog` |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.create.submit.success', (event) => {
+      kintone.showNotification({
+        text: 'Record saved successfully.',
+        type: 'success',
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.showLoading(visible)">
+    Toggles the full-screen loading overlay.
+
+    **Available pages:** Desktop only
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the loading overlay, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      kintone.showLoading(true);
+      try {
+        await fetchExternalData();
+      } finally {
+        kintone.showLoading(false);
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Page navigation
+
+<AccordionGroup>
+  <Accordion title="kintone.buildPageUrl(page, params)">
+    Generates a Kintone page URL. Guest space app pages automatically receive the correct guest space URL format. Use this instead of constructing URLs by hand.
+
+    **Available pages:** All pages (desktop and mobile). Not available on search, app store, or plug-in settings pages.
+
+    <Note>
+      This is an async API that returns a Promise. Response data is cached until the next page navigation. Exceeding 50 server requests per user per minute will cause the Promise to be rejected.
+    </Note>
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `page` | string | Yes | Page type identifier. See the table below for valid values. |
+    | `params` | object | Yes | Parameters used to build the URL |
+    | `params.appId` | string | Conditional | App ID. Required for all app pages. |
+    | `params.recordId` | string | Conditional | Record ID. Required for detail, edit, and print pages. |
+    | `params.viewId` | string | No | View ID. Optional for list pages. |
+    | `params.reportId` | string | Conditional | Graph ID. Required for graph pages. |
+    | `params.spaceId` | string | Conditional | Space ID. Required for space pages. |
+    | `params.threadId` | string | Conditional | Thread ID. Required for space thread pages. |
+    | `params.userCode` | string | Conditional | User login name. Required for People and Message pages. |
+
+    #### Page type values
+
+    | Value | Description |
+    | :-- | :-- |
+    | `APP_INDEX` | Record list (desktop) |
+    | `APP_CREATE` | Record create (desktop) |
+    | `APP_DETAIL` | Record detail (desktop) |
+    | `APP_EDIT` | Record edit (desktop) |
+    | `APP_PRINT` | Record print (desktop) |
+    | `APP_REPORT` | Graph (desktop) |
+    | `APP_INDEX_MOBILE` | Record list (mobile) |
+    | `APP_CREATE_MOBILE` | Record create (mobile) |
+    | `APP_DETAIL_MOBILE` | Record detail (mobile) |
+    | `APP_EDIT_MOBILE` | Record edit (mobile) |
+    | `APP_REPORT_MOBILE` | Graph (mobile) |
+    | `PORTAL_TOP` | Portal (desktop) |
+    | `PORTAL_TOP_MOBILE` | Portal (mobile) |
+    | `SPACE_PORTAL` | Space portal (desktop) |
+    | `SPACE_THREAD` | Space thread (desktop) |
+    | `SPACE_PORTAL_MOBILE` | Space portal (mobile) |
+    | `SPACE_THREAD_MOBILE` | Space thread (mobile) |
+    | `PEOPLE_TOP` | People profile (desktop) |
+    | `PEOPLE_TOP_MOBILE` | People profile (mobile) |
+    | `MESSAGE_TOP` | Message (desktop) |
+    | `MESSAGE_TOP_MOBILE` | Message (mobile) |
+    | `SEARCH_TOP` | Search (desktop) |
+    | `SEARCH_TOP_MOBILE` | Search (mobile) |
+    | `NOTIFICATION_TOP` | Notifications (desktop) |
+    | `APP_MARKETPLACE_TOP` | App store (desktop) |
+
+    #### Return value
+
+    Returns a Promise that resolves to a string containing the full page URL.
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', async (event) => {
+      const url = await kintone.buildPageUrl('APP_INDEX', {
+        appId: String(kintone.app.getId()),
+      });
+      console.log('List URL:', url);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard shortcuts
+
+<AccordionGroup>
+  <Accordion title="kintone.setKeyboardShortcuts(shortcuts)">
+    Enables or disables specific keyboard shortcuts on the current page.
+
+    **Available pages:** Desktop only. Available on record list, detail, create, and edit pages.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `shortcuts` | object | Yes | An object where each key is a shortcut name and each value is a boolean to enable (`true`) or disable (`false`) it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.setKeyboardShortcuts({
+        SEARCH: false,
+        NEW_RECORD: true,
+      });
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.getKeyboardShortcuts()">
+    Returns the current enabled/disabled state of all keyboard shortcuts available on the current page.
+
+    **Available pages:** Desktop only. Available on record list, detail, create, and edit pages.
+
+    <Note>
+      This is an async API that returns a Promise.
+    </Note>
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    Returns a Promise that resolves to an object where each key is a shortcut name and each value is a boolean indicating whether the shortcut is enabled. The shortcut names match the keys used in `kintone.setKeyboardShortcuts()`.
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', async (event) => {
+      const shortcuts = await kintone.getKeyboardShortcuts();
+      console.log('Shortcuts state:', shortcuts);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [Plug-in APIs](/js-api/plugin-apis) — APIs for building and configuring plug-ins
+- [UI elements](/js-api/ui-elements) — Show, hide, and retrieve DOM elements
+- [Field visibility](/js-api/field-visibility) — Show or hide form fields

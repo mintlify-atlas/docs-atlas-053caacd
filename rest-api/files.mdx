@@ -1,0 +1,192 @@
+---
+title: "Files"
+description: "REST API endpoints for uploading and downloading files in Kintone."
+---
+
+Use the Files API to upload files to Kintone and download files attached to records. File fields in records reference files by a `fileKey` string — upload a file first to get a `fileKey`, then use that key when adding or updating a record.
+
+## Endpoint summary
+
+| API | Method | URL |
+| :-- | :-- | :-- |
+| Download File | GET | `/k/v1/file.json` |
+| Upload File | POST | `/k/v1/file.json` |
+
+---
+
+## Download file
+
+<AccordionGroup>
+  <Accordion title="GET /k/v1/file.json — Download File">
+    Downloads a file from Kintone. The `fileKey` for a file is returned in the record's file field value when you retrieve a record.
+
+    **Request parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fileKey` | String | Yes | The file key of the file to download. Obtain this from the file field value of a record. |
+
+    **Response**
+
+    The response body is the raw binary content of the file. The `Content-Type` header reflects the file's MIME type.
+
+    <Note>
+      The `fileKey` is tied to the specific attachment on a specific record. Retrieve it from the record's file field using [Get Record](/rest-api/records) before calling this endpoint.
+    </Note>
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/file.json?fileKey={fileKey}' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -o downloaded-file.pdf
+    ```
+
+    ```js kintone.api()
+    // Note: kintone.api() returns parsed JSON responses.
+    // For binary file downloads, use a direct XMLHttpRequest or fetch instead.
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/k/v1/file.json?fileKey=' + encodeURIComponent(fileKey), true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.responseType = 'blob';
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var blob = xhr.response;
+        // Use the blob as needed, e.g. create an object URL
+        var url = URL.createObjectURL(blob);
+        console.log(url);
+      }
+    };
+    xhr.send();
+    ```
+
+    </CodeGroup>
+
+    **Getting a fileKey from a record**
+
+    File field values in a record contain an array of attachment objects. Each attachment has a `fileKey` property:
+
+    ```json
+    {
+      "record": {
+        "attachment": {
+          "type": "FILE",
+          "value": [
+            {
+              "contentType": "application/pdf",
+              "fileKey": "202cb962ac59075b964b07152d234b70",
+              "name": "report.pdf",
+              "size": "204800"
+            }
+          ]
+        }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Upload file
+
+<AccordionGroup>
+  <Accordion title="POST /k/v1/file.json — Upload File">
+    Uploads a file to Kintone and returns a `fileKey`. Use the `fileKey` when setting a file field value in [Add Record](/rest-api/records) or [Update Record](/rest-api/records).
+
+    **Request**
+
+    | Property | Value |
+    | :-- | :-- |
+    | Content-Type | `multipart/form-data` |
+
+    **Form parameters**
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `file` | Binary | Yes | The file to upload. Include the file content, filename, and MIME type in the multipart form data. |
+
+    **Response parameters**
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `fileKey` | String | A temporary file key that represents the uploaded file. Use this key when setting a file field value on a record. |
+
+    <Warning>
+      An uploaded file's `fileKey` expires if it is not attached to a record within 3 days. Upload files immediately before creating or updating records.
+    </Warning>
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/file.json' \
+      -H 'X-Cybozu-API-Token: {APIToken}' \
+      -F 'file=@/path/to/your/file.pdf;type=application/pdf'
+    ```
+
+    ```js kintone.api()
+    // Use FormData to upload a file from a browser input element
+    var fileInput = document.querySelector('input[type="file"]');
+    var formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/k/v1/file.json', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var resp = JSON.parse(xhr.responseText);
+        console.log(resp.fileKey);
+      }
+    };
+    xhr.send(formData);
+    ```
+
+    </CodeGroup>
+
+    **Sample response**
+
+    ```json
+    {
+      "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Attaching an uploaded file to a record
+
+After uploading, pass the returned `fileKey` in the file field value when creating or updating a record:
+
+```bash curl
+# Step 1: Upload the file
+curl -X POST 'https://{subdomain}.kintone.com/k/v1/file.json' \
+  -H 'X-Cybozu-API-Token: {APIToken}' \
+  -F 'file=@report.pdf;type=application/pdf'
+# Response: { "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6" }
+
+# Step 2: Attach the fileKey to a record field
+curl -X POST 'https://{subdomain}.kintone.com/k/v1/record.json' \
+  -H 'X-Cybozu-API-Token: {APIToken}' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "app": 1,
+    "record": {
+      "title": { "value": "Q4 Report" },
+      "attachment": {
+        "value": [
+          { "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6" }
+        ]
+      }
+    }
+  }'
+```
+
+---
+
+## Related pages
+
+- [Records](/rest-api/records) — Add and update records, including file field values.
+- [Bulk requests](/rest-api/bulk-requests) — Combine file-related record operations.

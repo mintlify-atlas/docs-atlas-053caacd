@@ -1,0 +1,198 @@
+---
+title: "JavaScript API overview"
+description: "Overview of the Kintone JavaScript API for customizing app UI and handling user events."
+---
+
+The Kintone JavaScript API lets you customize the behavior and appearance of Kintone apps directly in the browser. You can register event handlers that run when users load pages, create or edit records, or interact with fields — and you can read and write field values, show or hide UI elements, and call the Kintone REST API or external APIs from within your customization code.
+
+## How to add customization code
+
+You add JavaScript customizations to an app through the app's **JavaScript and CSS customization** settings. Paste your script file URL or upload a `.js` file, then save and activate the app. Kintone loads your script on every page where the app is displayed.
+
+Always wrap your customization code in an immediately-invoked function expression (IIFE) to avoid polluting the global namespace and to ensure event handlers are registered at the correct time:
+
+```js
+(function() {
+  'use strict';
+
+  kintone.events.on('app.record.index.show', function(event) {
+    // Your customization logic here
+    return event;
+  });
+
+})();
+```
+
+<Tip>
+  Register event handlers synchronously when your script loads — not inside `DOMContentLoaded` or `load` event callbacks. See [Event handling](/js-api/event-handling) for details on why this matters.
+</Tip>
+
+## API categories
+
+<CardGroup cols={2}>
+  <Card title="Events" icon="bolt" href="/js-api/event-handling">
+    Register and remove handlers for record list, detail, create, edit, print, graph, portal, and space events. Use `kintone.events.on()` and `kintone.events.off()`.
+  </Card>
+  <Card title="Record APIs" icon="database" href="/js-api/record-apis">
+    Get and set record data, field values, and permissions. Access the current record ID and field elements on the page.
+  </Card>
+  <Card title="App APIs" icon="grid-2" href="/js-api/app-apis">
+    Retrieve app metadata, form fields and layout, views, query conditions, and UI element references such as the header menu space element.
+  </Card>
+  <Card title="Space APIs" icon="layout-panel-left" href="/js-api/space-apis">
+    Get space information and space permissions for the current space context.
+  </Card>
+  <Card title="System APIs" icon="cpu" href="/js-api/system-apis">
+    Check available platform features and system-level permissions.
+  </Card>
+  <Card title="Field visibility" icon="eye" href="/js-api/field-visibility">
+    Show or hide fields and field groups on record forms programmatically.
+  </Card>
+  <Card title="UI elements" icon="layout" href="/js-api/ui-elements">
+    Toggle visibility of UI controls such as the new record button, filter button, edit button, sidebar, and status action buttons.
+  </Card>
+  <Card title="General utilities" icon="wrench" href="/js-api/general-utilities">
+    Get the logged-in user, user groups, organizations, design version, available services, and domain. Display notifications, confirmation dialogs, and loading indicators.
+  </Card>
+  <Card title="Plug-in APIs" icon="plug" href="/js-api/plugin-apis">
+    Read and write plug-in configuration. Make authenticated proxy requests to external services using plug-in credentials.
+  </Card>
+</CardGroup>
+
+## Full API reference
+
+### Events
+
+#### Record list events
+
+| Triggered timing | Desktop | Mobile |
+| :-- | :-- | :-- |
+| Onload | `app.record.index.show` | `mobile.app.record.index.show` |
+| Inline edit | `app.record.index.edit.show` | — |
+| Field change | `app.record.index.edit.change.(fieldcode)` | — |
+| Save | `app.record.index.edit.submit` | — |
+| Save success | `app.record.index.edit.submit.success` | — |
+| Delete | `app.record.index.delete.submit` | — |
+
+#### Record detail events
+
+| Triggered timing | Desktop | Mobile |
+| :-- | :-- | :-- |
+| Onload | `app.record.detail.show` | `mobile.app.record.detail.show` |
+| Delete | `app.record.detail.delete.submit` | `mobile.app.record.detail.delete.submit` |
+| Update status | `app.record.detail.process.proceed` | `mobile.record.detail.process.proceed` |
+
+#### Record create events
+
+| Triggered timing | Desktop | Mobile |
+| :-- | :-- | :-- |
+| Onload | `app.record.create.show` | `mobile.app.record.create.show` |
+| Field change | `app.record.create.change.(fieldcode)` | `mobile.app.record.create.change.(fieldcode)` |
+| Save | `app.record.create.submit` | `mobile.app.record.create.submit` |
+| Save success | `app.record.create.submit.success` | `mobile.app.record.create.submit.success` |
+
+#### Record edit events
+
+| Triggered timing | Desktop | Mobile |
+| :-- | :-- | :-- |
+| Onload | `app.record.edit.show` | `mobile.app.record.edit.show` |
+| Field change | `app.record.edit.change.(fieldcode)` | `mobile.app.record.edit.change.(fieldcode)` |
+| Save | `app.record.edit.submit` | `mobile.app.record.edit.submit` |
+| Save success | `app.record.edit.submit.success` | `mobile.app.record.edit.submit.success` |
+
+#### Other events
+
+| Event | Desktop | Mobile |
+| :-- | :-- | :-- |
+| Record print onload | `app.record.print.show` | — |
+| Graph display onload | `app.report.show` | `mobile.app.report.show` |
+| Portal display onload | `portal.show` | `mobile.portal.show` |
+| Space display onload | `space.portal.show` | `mobile.space.portal.show` |
+
+### Event handling
+
+| API | Available on |
+| :-- | :-- |
+| `kintone.events.on(type, handler)` | Desktop and mobile |
+| `kintone.events.off(type, handler)` | Desktop and mobile |
+
+### Record APIs
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.app.record.getId()` | Yes | `kintone.mobile.app.record.getId()` |
+| `kintone.app.record.get()` | Yes | `kintone.mobile.app.record.get()` |
+| `kintone.app.record.set()` | Yes | `kintone.mobile.app.record.set()` |
+| `kintone.app.record.getPermissions()` | Yes | Yes |
+| `kintone.app.record.getFieldPermissions()` | Yes | Yes |
+| `kintone.app.record.getStatusHistory()` | Yes | Yes |
+| `kintone.app.record.getActions()` | Yes | Yes |
+
+### App APIs
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.app.get()` | Yes | Yes |
+| `kintone.app.getId()` | Yes | `kintone.mobile.app.getId()` |
+| `kintone.app.getFormFields()` | Yes | Yes |
+| `kintone.app.getFormLayout()` | Yes | Yes |
+| `kintone.app.getQuery()` | Yes | `kintone.mobile.app.getQuery()` |
+| `kintone.app.getQueryCondition()` | Yes | `kintone.mobile.app.getQueryCondition()` |
+| `kintone.app.getView()` | Yes | Yes |
+| `kintone.app.getViews()` | Yes | Yes |
+| `kintone.app.isTestEnvironment()` | Yes | Yes |
+| `kintone.app.isMaintenanceMode()` | Yes | Yes |
+
+### Space APIs
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.space.get()` | Yes | Yes |
+| `kintone.space.getPermissions()` | Yes | Yes |
+
+### System APIs
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.system.getAvailableFeatures()` | Yes | Yes |
+| `kintone.system.getPermissions()` | Yes | Yes |
+
+### Plug-in APIs
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.plugin.app.getConfig()` | Yes | Yes |
+| `kintone.plugin.app.setConfig()` | Yes | — |
+| `kintone.plugin.app.proxy()` | Yes | Yes |
+| `kintone.plugin.app.proxy.upload()` | Yes | Yes |
+| `kintone.plugin.app.setProxyConfig()` | Yes | — |
+| `kintone.plugin.app.getProxyConfig()` | Yes | — |
+
+### REST API requests
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.api()` | Yes | Yes |
+| `kintone.api.url()` | Yes | Yes |
+| `kintone.api.urlForGet()` | Yes | Yes |
+| `kintone.getRequestToken()` | Yes | Yes |
+| `kintone.api.getConcurrencyLimit()` | Yes | Yes |
+| `kintone.proxy()` | Yes | Yes |
+| `kintone.proxy.upload()` | Yes | Yes |
+
+### General utilities
+
+| API | Desktop | Mobile |
+| :-- | :-- | :-- |
+| `kintone.getLoginUser()` | Yes | Yes |
+| `kintone.user.getCustomFields()` | Yes | Yes |
+| `kintone.user.getGroups()` | Yes | Yes |
+| `kintone.user.getOrganizations()` | Yes | Yes |
+| `kintone.getUiVersion()` | Yes | Yes |
+| `kintone.isMobileApp()` | Yes | Yes |
+| `kintone.isMobilePage()` | Yes | Yes |
+| `kintone.showNotification()` | Yes | — |
+| `kintone.showConfirmDialog()` | Yes | — |
+| `kintone.createDialog()` | Yes | — |
+| `kintone.showLoading()` | Yes | — |
+| `kintone.buildPageUrl()` | Yes | Yes |

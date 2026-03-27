@@ -1,0 +1,441 @@
+---
+title: "Plug-ins"
+description: "REST API endpoints for installing, updating, and managing Kintone plug-ins."
+---
+
+These endpoints let you install, update, uninstall, and retrieve information about plug-ins in your Kintone environment.
+
+<Note>
+  The install, update, and uninstall endpoints require **Kintone Administrator** privileges. The get installed plug-ins, get plug-in apps, and get required plug-ins endpoints have no special permission requirements.
+</Note>
+
+## Installing a plug-in
+
+Installing a plug-in is a two-step process: first upload the plug-in ZIP file to get a `fileKey`, then pass that key to the Install Plug-in endpoint.
+
+<Steps>
+  <Step title="Upload the plug-in ZIP file">
+    Use the [Upload File](/rest-api/files) endpoint to upload your plug-in `.zip` file. The response includes a `fileKey` that is valid for one use.
+
+    ```bash
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/file.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -F 'file=@/path/to/plugin.zip'
+    ```
+
+    ```json
+    { "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6" }
+    ```
+  </Step>
+  <Step title="Install the plug-in">
+    Pass the `fileKey` from step 1 to the Install Plug-in endpoint.
+
+    ```bash
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/plugin.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{"fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6"}'
+    ```
+
+    The response returns the new plug-in `id` and `version`.
+
+    ```json
+    {
+      "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+      "version": "1.0.0"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Endpoints
+
+<AccordionGroup>
+
+  <Accordion title="Get installed plug-ins — GET /k/v1/plugins.json">
+
+    Gets the list of plug-ins installed in the Kintone environment.
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `offset` | Integer | | The number of plug-ins to skip. Defaults to `0`. |
+    | `limit` | Integer | | The maximum number of plug-ins to return. Must be between 1 and 100. Defaults to `100`. |
+    | `ids` | Array of Strings | | Filter by plug-in IDs. Maximum of 100 IDs. If `null` or an empty array, this parameter is ignored. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `plugins` | Array | A list of installed plug-in objects, in descending order of install date. |
+    | `plugins[].id` | String | The plug-in ID. |
+    | `plugins[].name` | String | The name of the plug-in. |
+    | `plugins[].isMarketPlugin` | Boolean | Whether the plug-in was installed from the Kintone Marketplace. |
+    | `plugins[].version` | String | The version number of the plug-in. |
+    | `plugins[].description` | String | The plug-in description. Empty string if none. |
+
+    ### Examples
+
+    <CodeGroup>
+
+    ```bash curl (list all)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/plugins.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{"offset": 0, "limit": 10}'
+    ```
+
+    ```bash curl (by IDs)
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/plugins.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "ids": ["djmhffjhfgmebgnmcggopedaofckljlj", "ejgcopfamifdhmkafjgidfmgjdmiaplf"]
+      }'
+    ```
+
+    ```js JavaScript (list all)
+    kintone.api(kintone.api.url('/k/v1/plugins.json', true), 'GET', { offset: 0, limit: 10 }, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {
+      "plugins": [
+        {
+          "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+          "name": "Plugin 1",
+          "isMarketPlugin": false,
+          "version": "1",
+          "description": "Description of Plugin 1"
+        },
+        {
+          "id": "ejgcopfamifdhmkafjgidfmgjdmiaplf",
+          "name": "Plugin 2",
+          "isMarketPlugin": false,
+          "version": "2",
+          "description": "Description of Plugin 2"
+        }
+      ]
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="Install plug-in — POST /k/v1/plugin.json">
+
+    Installs a plug-in into the Kintone environment using a `fileKey` obtained from the [Upload File](/rest-api/files) endpoint.
+
+    <Warning>
+      Only Kintone Administrators can use this endpoint.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fileKey` | String | Yes | The file key of the uploaded plug-in ZIP. Obtain this from the [Upload File](/rest-api/files) endpoint. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The ID of the installed plug-in. |
+    | `version` | String | The version number of the installed plug-in. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X POST 'https://{subdomain}.kintone.com/k/v1/plugin.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      'fileKey': 'c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6'
+    };
+    kintone.api(kintone.api.url('/k/v1/plugin.json', true), 'POST', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {
+      "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+      "version": "1.0.0"
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="Update plug-in — PUT /k/v1/plugin.json">
+
+    Updates an installed plug-in to a new version.
+
+    <Warning>
+      Only Kintone Administrators can use this endpoint.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | String | Yes | The ID of the plug-in to update. |
+    | `fileKey` | String | Yes | The file key of the updated plug-in ZIP. Obtain this from the [Upload File](/rest-api/files) endpoint. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `id` | String | The ID of the updated plug-in. |
+    | `version` | String | The new version number of the plug-in. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X PUT 'https://{subdomain}.kintone.com/k/v1/plugin.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+        "fileKey": "c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      'id': 'djmhffjhfgmebgnmcggopedaofckljlj',
+      'fileKey': 'c15b3870-7505-4ab6-9d8d-b9bdbc74f5d6'
+    };
+    kintone.api(kintone.api.url('/k/v1/plugin.json', true), 'PUT', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {
+      "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+      "version": "1.0.1"
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="Uninstall plug-in — DELETE /k/v1/plugin.json">
+
+    Uninstalls a plug-in from the Kintone environment.
+
+    <Warning>
+      Only Kintone Administrators can use this endpoint. Uninstalling a plug-in that is currently added to apps will affect those apps.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | String | Yes | The ID of the plug-in to uninstall. |
+
+    ### Response
+
+    An empty JSON object is returned.
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X DELETE 'https://{subdomain}.kintone.com/k/v1/plugin.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": "djmhffjhfgmebgnmcggopedaofckljlj"
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      'id': 'djmhffjhfgmebgnmcggopedaofckljlj'
+    };
+    kintone.api(kintone.api.url('/k/v1/plugin.json', true), 'DELETE', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {}
+    ```
+
+  </Accordion>
+
+  <Accordion title="Get plug-in apps — GET /k/v1/plugin/apps.json">
+
+    Gets the list of apps that have a specific plug-in added.
+
+    <Warning>
+      Only Kintone Administrators can use this endpoint.
+    </Warning>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | String | Yes | The ID of the plug-in. |
+    | `offset` | Integer | | The number of apps to skip. Defaults to `0`. |
+    | `limit` | Integer | | The maximum number of apps to return. Must be between 1 and 500. Defaults to `100`. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `apps` | Array | A list of app objects, in ascending order of App ID. |
+    | `apps[].id` | String | The App ID. |
+    | `apps[].name` | String | The name of the app. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/plugin/apps.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "id": "djmhffjhfgmebgnmcggopedaofckljlj",
+        "offset": 1,
+        "limit": 3
+      }'
+    ```
+
+    ```js JavaScript
+    var body = {
+      'id': 'djmhffjhfgmebgnmcggopedaofckljlj',
+      'offset': 1,
+      'limit': 3
+    };
+    kintone.api(kintone.api.url('/k/v1/plugin/apps.json', true), 'GET', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {
+      "apps": [
+        { "id": "1", "name": "App 1" },
+        { "id": "2", "name": "App 2" },
+        { "id": "3", "name": "App 3" }
+      ]
+    }
+    ```
+
+  </Accordion>
+
+  <Accordion title="Get required plug-ins — GET /k/v1/plugins/required.json">
+
+    Gets the list of plug-ins that were previously installed and added to apps, but have since been uninstalled from the Kintone environment. These plug-ins need to be reinstalled to restore full app functionality.
+
+    <Note>
+      This situation occurs when a plug-in is installed, added to one or more apps, and then uninstalled from the Kintone environment. The apps still reference the plug-in, but it is no longer available.
+    </Note>
+
+    ### Request
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `offset` | Integer | | The number of plug-ins to skip. Defaults to `0`. |
+    | `limit` | Integer | | The maximum number of plug-ins to return. Must be between 1 and 100. Defaults to `100`. |
+
+    ### Response
+
+    | Parameter | Type | Description |
+    | :-- | :-- | :-- |
+    | `plugins` | Array | A list of plug-ins that need to be reinstalled. |
+    | `plugins[].id` | String | The plug-in ID. |
+    | `plugins[].name` | String | The name of the plug-in. |
+    | `plugins[].isMarketPlugin` | Boolean | Whether the plug-in was installed from the Kintone Marketplace. |
+
+    ### Example
+
+    <CodeGroup>
+
+    ```bash curl
+    curl -X GET 'https://{subdomain}.kintone.com/k/v1/plugins/required.json' \
+      -H 'X-Cybozu-Authorization: {AuthorizationCode}' \
+      -H 'Content-Type: application/json' \
+      -d '{"offset": 0, "limit": 10}'
+    ```
+
+    ```js JavaScript
+    var body = {
+      'offset': 1,
+      'limit': 3
+    };
+    kintone.api(kintone.api.url('/k/v1/plugins/required.json', true), 'GET', body, function(resp) {
+      console.log(resp);
+    }, function(error) {
+      console.log(error);
+    });
+    ```
+
+    </CodeGroup>
+
+    ### Sample response
+
+    ```json
+    {
+      "plugins": [
+        { "id": "djmhffjhfgmebgnmcggopedaofckljlj", "name": "Plugin 1", "isMarketPlugin": false },
+        { "id": "ejgcopfamifdhmkafjgidfmgjdmiaplf", "name": "Plugin 2", "isMarketPlugin": false }
+      ]
+    }
+    ```
+
+  </Accordion>
+
+</AccordionGroup>
+
+## Related pages
+
+- [Authentication](/rest-api/authentication) — Set up request authentication.
+- [Files](/rest-api/files) — Upload a plug-in ZIP to get a `fileKey`.
+- [JS API Plug-in APIs](/js-api/plugin-apis) — Work with plug-ins from within Kintone customizations.
+- [Spaces](/rest-api/spaces) — Manage Kintone spaces.

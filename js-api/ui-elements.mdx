@@ -1,0 +1,942 @@
+---
+title: "UI elements"
+description: "Show, hide, and retrieve DOM elements for Kintone app UI components."
+---
+
+These APIs let you control the visibility of built-in Kintone UI buttons and toolbars, check their current display state, and retrieve DOM elements to inject custom content.
+
+<Note>
+  Show/hide APIs and get-element APIs are only available inside event handlers registered with `kintone.events.on()`. The specific pages where each API is available are noted in each entry.
+</Note>
+
+## Show or hide UI buttons
+
+<AccordionGroup>
+  <Accordion title="kintone.app.showAddRecordButton(visible)">
+    Shows or hides the **New Record** button on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.showAddRecordButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showAddRecordButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showAppSettingsButton(visible)">
+    Shows or hides the **App Settings** (gear) button on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showAppSettingsButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showDuplicateRecordButton(visible)">
+    Shows or hides the **Duplicate** record button on the record detail screen.
+
+    **Available pages:** Record detail (desktop only)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showDuplicateRecordButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showEditRecordButton(visible)">
+    Shows or hides the **Edit** button on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.showEditRecordButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showEditRecordButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showFilterButton(visible)">
+    Shows or hides the **Filter** button on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.showFilterButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showFilterButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showViewAndReportSelector(visible)">
+    Shows or hides the views and graphs selector dropdown on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variants: `kintone.mobile.app.showReportSelector(visible)` (graphs only) and `kintone.mobile.app.showViewSelector(visible)` (views only).
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the selector, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showViewAndReportSelector(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showOptionsButton(visible)">
+    Shows or hides the **Options** (ellipsis) button on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.showOptionsButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showOptionsButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showPager(visible)">
+    Shows or hides the record navigation (pager) buttons on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.showPager(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the pager, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showPager(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showReportButton(visible)">
+    Shows or hides the **Graph** (chart) button on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showReportButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showSideBar(visible)">
+    Toggles the sidebar on the record detail screen.
+
+    **Available pages:** Record detail (desktop only)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the sidebar, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showSideBar(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showActionButton(visible)">
+    Shows or hides the app action button on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.showActionButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showActionButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.showStatusActionButton(visible)">
+    Shows or hides the process management action button on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.showStatusActionButton(visible)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the button, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      kintone.app.record.showStatusActionButton(false);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.showDescription(visible)">
+    Toggles the app description banner on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `visible` | boolean | Yes | `true` to show the description, `false` to hide it |
+
+    #### Return value
+
+    `undefined`
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      kintone.app.showDescription(false);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Get elements
+
+Use these APIs to retrieve DOM elements and inject custom UI content.
+
+### Record form elements
+
+<AccordionGroup>
+  <Accordion title="kintone.app.record.getFieldElement(fieldCode)">
+    Returns the DOM element of a field on the record detail or edit form.
+
+    **Available pages:** Record detail, record create, record edit (desktop). Mobile variant: `kintone.mobile.app.record.getFieldElement(fieldCode)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the target field |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the field, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const el = kintone.app.record.getFieldElement('Status');
+      if (el) {
+        el.style.backgroundColor = '#fffbe6';
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getHeaderMenuSpaceElement()">
+    Returns the DOM element of the header menu space on the record form. Use this to inject custom buttons or controls into the record header area.
+
+    **Available pages:** Record detail, record create, record edit (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the header menu space, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const menuEl = kintone.app.record.getHeaderMenuSpaceElement();
+      if (menuEl) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Export';
+        menuEl.appendChild(btn);
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getSpaceElement(id)">
+    Returns the DOM element of a blank space field on the record form. Use blank space fields as containers for custom UI widgets.
+
+    **Available pages:** Record detail, record create, record edit (desktop). Mobile variant: `kintone.mobile.app.record.getSpaceElement(id)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `id` | string | Yes | The element ID of the blank space field |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the space, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.create.show', (event) => {
+      const spaceEl = kintone.app.record.getSpaceElement('my-custom-widget');
+      if (spaceEl) {
+        spaceEl.innerHTML = '<p>Custom content here</p>';
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Record list elements
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getFieldElements(fieldCode)">
+    Returns an array of DOM elements for a field column in the record list view.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.getFieldElements(fieldCode)`.
+
+    #### Parameters
+
+    | Parameter | Type | Required | Description |
+    | :-- | :-- | :-- | :-- |
+    | `fieldCode` | string | Yes | The field code of the target field |
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element[] \| null | Array of DOM elements (one per record row), or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const cells = kintone.app.getFieldElements('Status');
+      if (cells) {
+        cells.forEach((cell) => {
+          cell.style.fontWeight = 'bold';
+        });
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getHeaderMenuSpaceElement()">
+    Returns the DOM element of the header menu space on the record list. Use this to inject custom controls into the list toolbar.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the header menu space, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const menuEl = kintone.app.getHeaderMenuSpaceElement();
+      if (menuEl) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Bulk action';
+        menuEl.appendChild(btn);
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getHeaderSpaceElement()">
+    Returns the DOM element of the header space area above the record list. Use this to inject banners, search controls, or other UI above the list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the header space, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const headerEl = kintone.app.getHeaderSpaceElement();
+      if (headerEl) {
+        headerEl.innerHTML = '<p>Welcome to this app.</p>';
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Portal and space elements
+
+<AccordionGroup>
+  <Accordion title="kintone.portal.getContentSpaceElement()">
+    Returns the DOM element of the content area on the Kintone portal. Use this to inject custom widgets into the portal page.
+
+    **Available pages:** Portal (desktop). Mobile variant: `kintone.mobile.portal.getContentSpaceElement()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the portal content area, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('portal.show', (event) => {
+      const portalEl = kintone.portal.getContentSpaceElement();
+      if (portalEl) {
+        portalEl.innerHTML = '<h2>Company Announcements</h2>';
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.space.portal.getContentSpaceElement()">
+    Returns the DOM element of the content area on a Kintone space portal. Use this to inject custom content into a space portal page.
+
+    **Available pages:** Space portal (desktop). Mobile variant: `kintone.mobile.space.portal.getContentSpaceElement()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | Element \| null | The DOM element for the space content area, or `null` if not found |
+
+    #### Example
+
+    ```js
+    kintone.events.on('space.portal.show', (event) => {
+      const spaceEl = kintone.space.portal.getContentSpaceElement();
+      if (spaceEl) {
+        spaceEl.innerHTML = '<p>Space custom content</p>';
+      }
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Get element display state
+
+These APIs return the current visibility state of UI elements. Use them to check the current state before toggling visibility.
+
+<AccordionGroup>
+  <Accordion title="kintone.app.getDescriptionDisplayState()">
+    Returns whether the app description banner is currently visible on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the app description is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getDescriptionDisplayState();
+      console.log('Description visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getSideBarDisplayState()">
+    Returns whether the sidebar on the record detail screen is currently visible.
+
+    **Available pages:** Record detail (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the sidebar is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getSideBarDisplayState();
+      console.log('Sidebar visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getAddRecordButtonDisplayState()">
+    Returns whether the **New Record** button is currently visible on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.getAddRecordButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the New Record button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getAddRecordButtonDisplayState();
+      console.log('Add record button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getEditRecordButtonDisplayState()">
+    Returns whether the **Edit** button is currently visible on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.getEditRecordButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the Edit button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getEditRecordButtonDisplayState();
+      console.log('Edit button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getDuplicateRecordButtonDisplayState()">
+    Returns whether the **Duplicate** button is currently visible on the record detail screen.
+
+    **Available pages:** Record detail (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the Duplicate button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getDuplicateRecordButtonDisplayState();
+      console.log('Duplicate button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getAppSettingsButtonDisplayState()">
+    Returns whether the **App Settings** button is currently visible on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the App Settings button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getAppSettingsButtonDisplayState();
+      console.log('App settings button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getOptionsButtonDisplayState()">
+    Returns whether the **Options** button is currently visible on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.getOptionsButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the Options button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getOptionsButtonDisplayState();
+      console.log('Options button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getPagerDisplayState()">
+    Returns whether the record navigation (pager) buttons are currently visible on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.getPagerDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the pager buttons are visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getPagerDisplayState();
+      console.log('Pager visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getFilterButtonDisplayState()">
+    Returns whether the **Filter** button is currently visible on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variant: `kintone.mobile.app.getFilterButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the Filter button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getFilterButtonDisplayState();
+      console.log('Filter button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getReportButtonDisplayState()">
+    Returns whether the **Graph** button is currently visible on the record list.
+
+    **Available pages:** Record list (desktop only)
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the Graph button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getReportButtonDisplayState();
+      console.log('Graph button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.getViewAndReportSelectorDisplayState()">
+    Returns whether the views and graphs selector is currently visible on the record list.
+
+    **Available pages:** Record list (desktop). Mobile variants: `kintone.mobile.app.getReportSelectorDisplayState()` (graphs) and `kintone.mobile.app.getViewSelectorDisplayState()` (views).
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the selector is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.index.show', (event) => {
+      const isVisible = kintone.app.getViewAndReportSelectorDisplayState();
+      console.log('View/report selector visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getActionButtonDisplayState()">
+    Returns whether the app action button is currently visible on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.getActionButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the action button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getActionButtonDisplayState();
+      console.log('Action button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="kintone.app.record.getStatusActionButtonDisplayState()">
+    Returns whether the process management action button is currently visible on the record detail screen.
+
+    **Available pages:** Record detail (desktop). Mobile variant: `kintone.mobile.app.record.getStatusActionButtonDisplayState()`.
+
+    #### Parameters
+
+    None
+
+    #### Return value
+
+    | Type | Description |
+    | :-- | :-- |
+    | boolean | `true` if the status action button is visible |
+
+    #### Example
+
+    ```js
+    kintone.events.on('app.record.detail.show', (event) => {
+      const isVisible = kintone.app.record.getStatusActionButtonDisplayState();
+      console.log('Status action button visible:', isVisible);
+      return event;
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [Field visibility](/js-api/field-visibility) — Show or hide individual form fields
+- [Event handling](/js-api/event-handling) — Register event handlers
+- [Record list events](/js-api/events/record-list-events)
+- [Record detail events](/js-api/events/record-detail-events)
